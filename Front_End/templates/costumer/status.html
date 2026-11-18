@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Order Status - QuickServe{% endblock %}
+
+{% block content %}
+  <h2>Order Placed!</h2>
+
+  <h1>Order #{{ order.order_no }}</h1>
+  <p>Table: {{ order.table_no }}</p>
+  <p>Total: ₱{{ order.total }}</p>
+
+  <p>Status: <strong>{{ order.status }}</strong></p>
+
+  <p>Pending → Preparing → Ready → Completed</p>
+
+  <a href="/menu">Order more</a>
+{% endblock %}

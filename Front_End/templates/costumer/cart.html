@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Cart - QuickServe{% endblock %}
+
+{% block content %}
+  <h2>Your Cart</h2>
+
+  {% if items %}
+    <table border="1">
+      <tr>
+        <th>Item</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Subtotal</th>
+        <th>Action</th>
+      </tr>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>₱{{ item.price }}</td>
+          <td>
+            <button>-</button>
+            {{ item.qty }}
+            <button>+</button>
+          </td>
+          <td>₱{{ item.price * item.qty }}</td>
+          <td><button>Remove</button></td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <p><strong>Total: ₱{{ total }}</strong></p>
+
+    <button>Undo</button>
+    <button>Place Order</button>
+  {% else %}
+    <p>Your cart is empty.</p>
+  {% endif %}
+
+  <br>
+  <a href="/menu">Back to Menu</a>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Menu Management - QuickServe Admin{% endblock %}
+
+{% block content %}
+  <h2>Menu and Stock Management</h2>
+
+  <nav>
+    <a href="/admin/dashboard">Dashboard</a> |
+    <a href="/admin/orders">All Orders</a> |
+    <a href="/admin/menu">Menu</a> |
+    <a href="/admin/reports">Reports</a> |
+    <a href="/admin/login">Logout</a>
+  </nav>
+
+  <hr>
+
+  <h3>Add New Item</h3>
+  <form action="/admin/menu" method="post">
+    <input type="text" name="name" placeholder="Item name" required>
+    <input type="number" name="price" placeholder="Price" min="1" required>
+    <input type="number" name="stock" placeholder="Stock" min="0" required>
+    <button type="submit">Add</button>
+  </form>
+
+  <h3>Current Menu</h3>
+  <table border="1">
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Stock</th>
+      <th>Action</th>
+    </tr>
+    {% for item in items %}
+      <tr>
+        <td>{{ item.id }}</td>
+        <td>{{ item.name }}</td>
+        <td>₱{{ item.price }}</td>
+        <td>
+          {{ item.stock }}
+          {% if item.stock == 0 %}<strong>(Out of stock)</strong>{% endif %}
+        </td>
+        <td>
+          <button>Edit</button>
+          <button>Delete</button>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

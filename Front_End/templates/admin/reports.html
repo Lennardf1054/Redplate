@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sales Report - QuickServe Admin{% endblock %}
+
+{% block content %}
+  <h2>Sales Report</h2>
+
+  <nav>
+    <a href="/admin/dashboard">Dashboard</a> |
+    <a href="/admin/orders">All Orders</a> |
+    <a href="/admin/menu">Menu</a> |
+    <a href="/admin/reports">Reports</a> |
+    <a href="/admin/login">Logout</a>
+  </nav>
+
+  <hr>
+
+  <form action="/admin/reports" method="get">
+    <label for="sort">Sort by:</label>
+    <select name="sort" id="sort">
+      <option value="order_no" {% if sort_by == "order_no" %}selected{% endif %}>Order #</option>
+      <option value="total" {% if sort_by == "total" %}selected{% endif %}>Total</option>
+    </select>
+    <button type="submit">Apply</button>
+  </form>
+
+  <table border="1">
+    <tr>
+      <th>Order #</th>
+      <th>Items</th>
+      <th>Total</th>
+    </tr>
+    {% for order in orders %}
+      <tr>
+        <td>{{ order.order_no }}</td>
+        <td>{{ order.items }}</td>
+        <td>₱{{ order.total }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p><strong>Total sales: ₱{{ total_sales }}</strong></p>
+  <p>Completed orders: {{ orders|length }}</p>
+{% endblock %}
