@@ -6,35 +6,38 @@ class Node:
 
 class Queue:
     def __init__(self):
-        self.front = None
-        self.back = None
+        self.front = None   # first in line (next to be served)
+        self.back = None    # last in line (newest)
         self._size = 0
 
     def is_empty(self):
-        # TODO: return True if the queue has no items
-        pass
-
-    def enqueue(self, item):
-        # TODO:
-        # 1. make a new Node with item
-        # 2. if the queue is empty, front and back both point to it
-        # 3. otherwise, link it after back, then move back to it
-        # 4. add 1 to _size
-        pass
-
-    def dequeue(self):
-        # TODO:
-        # 1. if empty, raise an error (IndexError with a clear message)
-        # 2. save the front node's data
-        # 3. move front to front.next
-        # 4. if front is now None, set back to None too
-        # 5. subtract 1 from _size, return the saved data
-        pass
-
-    def peek(self):
-        # TODO: return the front's data without removing it (error if empty)
-        pass
+        return self.front is None
 
     def size(self):
-        # TODO: return _size
-        pass
+        return self._size
+
+    def enqueue(self, item):
+        new_node = Node(item)
+        if self.is_empty():
+            # first item: it's both the front and the back
+            self.front = new_node
+            self.back = new_node
+        else:
+            self.back.next = new_node   # link the old back to the new node
+            self.back = new_node        # new node is now the back
+        self._size += 1
+
+    def dequeue(self):
+        if self.is_empty():
+            raise IndexError("Cannot dequeue from an empty queue")
+        data = self.front.data
+        self.front = self.front.next    # move front to the next node
+        if self.front is None:
+            self.back = None            # queue is now empty
+        self._size -= 1
+        return data
+
+    def peek(self):
+        if self.is_empty():
+            raise IndexError("Cannot peek at an empty queue")
+        return self.front.data
