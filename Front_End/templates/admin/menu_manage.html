@@ -1,18 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Menu Management - QuickServe Admin{% endblock %}
 
+{% block nav %}
+  {% include "admin/_nav.html" %}
+{% endblock %}
+
 {% block content %}
   <h2>Menu and Stock Management</h2>
 
-  <nav>
-    <a href="/admin/dashboard">Dashboard</a> |
-    <a href="/admin/orders">All Orders</a> |
-    <a href="/admin/menu">Menu</a> |
-    <a href="/admin/reports">Reports</a> |
-    <a href="/admin/login">Logout</a>
-  </nav>
 
-  <hr>
 
   <h3>Add New Item</h3>
   <form action="/admin/menu" method="post">
@@ -23,7 +19,7 @@
   </form>
 
   <h3>Current Menu</h3>
-  <table border="1">
+  <table>
     <tr>
       <th>ID</th>
       <th>Name</th>

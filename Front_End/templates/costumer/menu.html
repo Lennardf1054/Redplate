@@ -1,23 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Menu - QuickServe{% endblock %}
 
+{% block nav %}
+  <div class="inline-nav">
+    <a href="/menu">Menu</a>
+    <a href="/cart">Cart</a>
+  </div>
+{% endblock %}
+
 {% block content %}
-  <h2>Menu</h2>
+  <h2>Our Menu</h2>
+  <input type="search" placeholder="Search food..." style="margin-bottom: 20px;">
 
-  <input type="text" placeholder="Search food...">
-
-  <ul>
+  <div class="menu-grid">
     {% for item in items %}
-      <li>
-        {{ item.name }} - ₱{{ item.price }}
+      <div class="menu-item">
+        <strong>{{ item.name }}</strong>
+        <span class="price">₱{{ item.price }}</span>
         {% if item.stock > 0 %}
-          <button>Add</button>
+          <button>Add to Cart</button>
         {% else %}
-          <em>Out of stock</em>
+          <span class="pill urgent">Out of stock</span>
         {% endif %}
-      </li>
+      </div>
     {% endfor %}
-  </ul>
-
-  <a href="/cart">View Cart</a>
+  </div>
 {% endblock %}

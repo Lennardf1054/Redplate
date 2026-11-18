@@ -1,11 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Cart - QuickServe{% endblock %}
 
+{% block nav %}
+  <div class="inline-nav">
+    <a href="/menu">Menu</a>
+    <a href="/cart">Cart</a>
+  </div>
+{% endblock %}
+
 {% block content %}
   <h2>Your Cart</h2>
 
   {% if items %}
-    <table border="1">
+    <table>
       <tr>
         <th>Item</th>
         <th>Price</th>
@@ -18,24 +25,27 @@
           <td>{{ item.name }}</td>
           <td>₱{{ item.price }}</td>
           <td>
-            <button>-</button>
-            {{ item.qty }}
-            <button>+</button>
+            <div class="qty-control">
+              <button class="secondary" aria-label="Decrease">−</button>
+              <span>{{ item.qty }}</span>
+              <button class="secondary" aria-label="Increase">+</button>
+            </div>
           </td>
           <td>₱{{ item.price * item.qty }}</td>
-          <td><button>Remove</button></td>
+          <td><button class="secondary">Remove</button></td>
         </tr>
       {% endfor %}
     </table>
 
-    <p><strong>Total: ₱{{ total }}</strong></p>
-
-    <button>Undo</button>
-    <button>Place Order</button>
+    <div class="card" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <strong style="font-size: 1.2rem;">Total: ₱{{ total }}</strong>
+      <div style="display: flex; gap: 10px;">
+        <button class="secondary">Undo</button>
+        <button>Place Order</button>
+      </div>
+    </div>
   {% else %}
     <p>Your cart is empty.</p>
+    <a href="/menu" class="btn">Browse the menu</a>
   {% endif %}
-
-  <br>
-  <a href="/menu">Back to Menu</a>
 {% endblock %}

@@ -1,18 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Sales Report - QuickServe Admin{% endblock %}
 
+{% block nav %}
+  {% include "admin/_nav.html" %}
+{% endblock %}
+
 {% block content %}
   <h2>Sales Report</h2>
 
-  <nav>
-    <a href="/admin/dashboard">Dashboard</a> |
-    <a href="/admin/orders">All Orders</a> |
-    <a href="/admin/menu">Menu</a> |
-    <a href="/admin/reports">Reports</a> |
-    <a href="/admin/login">Logout</a>
-  </nav>
-
-  <hr>
 
   <form action="/admin/reports" method="get">
     <label for="sort">Sort by:</label>
@@ -23,7 +18,7 @@
     <button type="submit">Apply</button>
   </form>
 
-  <table border="1">
+  <table>
     <tr>
       <th>Order #</th>
       <th>Items</th>

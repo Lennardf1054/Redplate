@@ -1,18 +1,12 @@
 {% extends "base.html" %}
 {% block title %}All Orders - QuickServe Admin{% endblock %}
 
+{% block nav %}
+  {% include "admin/_nav.html" %}
+{% endblock %}
+
 {% block content %}
   <h2>All Orders</h2>
-
-  <nav>
-    <a href="/admin/dashboard">Dashboard</a> |
-    <a href="/admin/orders">All Orders</a> |
-    <a href="/admin/menu">Menu</a> |
-    <a href="/admin/reports">Reports</a> |
-    <a href="/admin/login">Logout</a>
-  </nav>
-
-  <hr>
 
   <form action="/admin/orders" method="get">
     <input type="text" name="order_id" placeholder="Search by order #">
@@ -24,7 +18,7 @@
     <p>{{ message }}</p>
   {% endif %}
 
-  <table border="1">
+  <table>
     <tr>
       <th>Order #</th>
       <th>Table</th>

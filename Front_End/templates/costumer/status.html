@@ -2,15 +2,18 @@
 {% block title %}Order Status - QuickServe{% endblock %}
 
 {% block content %}
-  <h2>Order Placed!</h2>
+  <div class="card">
+    <h2>Order Placed!</h2>
+    <h1 style="font-size: 2.5rem; margin: 10px 0;">Order #{{ order.order_no }}</h1>
+    <p>Table: <strong>{{ order.table_no }}</strong></p>
+    <p>Total: <strong>₱{{ order.total }}</strong></p>
 
-  <h1>Order #{{ order.order_no }}</h1>
-  <p>Table: {{ order.table_no }}</p>
-  <p>Total: ₱{{ order.total }}</p>
+    <div class="steps">
+      {% for step in ["Pending", "Preparing", "Ready", "Completed"] %}
+        <div class="step {% if step == order.status %}active{% endif %}">{{ step }}</div>
+      {% endfor %}
+    </div>
+  </div>
 
-  <p>Status: <strong>{{ order.status }}</strong></p>
-
-  <p>Pending → Preparing → Ready → Completed</p>
-
-  <a href="/menu">Order more</a>
+  <a href="/menu" class="btn">Order more</a>
 {% endblock %}

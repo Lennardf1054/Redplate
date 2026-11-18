@@ -1,18 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - QuickServe Admin{% endblock %}
 
+{% block nav %}
+  {% include "admin/_nav.html" %}
+{% endblock %}
+
+
 {% block content %}
   <h2>Admin Dashboard</h2>
 
-  <nav>
-    <a href="/admin/dashboard">Dashboard</a> |
-    <a href="/admin/orders">All Orders</a> |
-    <a href="/admin/menu">Menu</a> |
-    <a href="/admin/reports">Reports</a> |
-    <a href="/admin/login">Logout</a>
-  </nav>
-
-  <hr>
 
   {% if next_order %}
     <h3>Next to serve: #{{ next_order.order_no }} (Table {{ next_order.table_no }})</h3>
@@ -20,7 +16,7 @@
     <h3>No pending orders.</h3>
   {% endif %}
 
-  <table border="1">
+  <table>
     <tr>
       <th>Order #</th>
       <th>Table</th>
