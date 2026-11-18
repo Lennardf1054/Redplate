@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Menu - QuickServe{% endblock %}
+
+{% block content %}
+  <h2>Menu</h2>
+
+  <input type="text" placeholder="Search food...">
+
+  <ul>
+    {% for item in items %}
+      <li>
+        {{ item.name }} - ₱{{ item.price }}
+        {% if item.stock > 0 %}
+          <button>Add</button>
+        {% else %}
+          <em>Out of stock</em>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+
+  <a href="/cart">View Cart</a>
+{% endblock %}
