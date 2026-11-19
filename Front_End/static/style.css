@@ -13,6 +13,15 @@
 
 * { box-sizing: border-box; }
 
+.flash {
+  background: #fff3cd;
+  border: 1px solid #ffe08a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.qty-control form { display: inline; margin: 0; }
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;

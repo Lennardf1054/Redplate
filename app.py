@@ -1,10 +1,17 @@
 from flask import Flask, render_template, request
+import config
+from Back_End import service
+from Back_End.routes.costumer import customer_bp
 
 app = Flask(
     __name__,
     template_folder="Front_End/templates",
     static_folder="Front_End/static",
 )
+app.secret_key = config.SECRET_KEY
+
+service.init()
+app.register_blueprint(customer_bp)
 
 #route for costumer login dashboard so it can find from base html
 @app.route("/")
@@ -25,32 +32,6 @@ menu_items = [
     {"id": 3, "name": "Iced Tea", "price": 20, "stock": 0},
 ]
 
-@app.route("/menu")
-def menu():
-    return render_template("costumer/menu.html", items=menu_items)
-
-#cart items for costumer cart page
-cart_items = [
-    {"id": 1, "name": "Chicken Adobo", "price": 60, "qty": 2},
-    {"id": 2, "name": "Pancit Canton", "price": 35, "qty": 1},
-]
-
-@app.route("/cart")
-def cart():
-    total = sum(item["price"] * item["qty"] for item in cart_items)
-    return render_template("costumer/cart.html", items=cart_items, total=total)
-
-#order status page
-orders = [
-    {"order_no": 42, "table_no": 5, "status": "Preparing", "total": 155},
-]
-
-@app.route("/order/<int:order_no>")
-def order_status(order_no):
-    for order in orders:
-        if order["order_no"] == order_no:
-            return render_template("costumer/status.html", order=order)
-    return "Order not found", 404
 
 #admin dashboard page
 pending_orders = [

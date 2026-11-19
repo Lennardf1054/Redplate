@@ -1,59 +1,69 @@
-import random
-from Back_End.algorithm import linear_search, binary_search, bubble_sort, merge_sort
+# ---------- SEARCHING (find an order by order number) ----------
 
-def make_orders(ids):
-    return [{"id": i, "total": i * 10} for i in ids]
+def linear_search(orders, order_no):
+    """Check every order from the start. Works on any list. O(n)."""
+    for i, order in enumerate(orders):
+        if order["order_no"] == order_no:
+            return i
+    return -1                                  # not found
 
-# --- search ---
-def test_search_found():
-    orders = make_orders([1, 2, 3, 4, 5])
-    assert linear_search(orders, 3)["id"] == 3
-    assert binary_search(orders, 3)["id"] == 3
 
-def test_search_not_found():
-    orders = make_orders([1, 2, 3])
-    assert linear_search(orders, 99) is None
-    assert binary_search(orders, 99) is None
+def binary_search(orders, order_no):
+    """Repeatedly halve the search area. The list MUST be sorted by order_no. O(log n)."""
+    low = 0
+    high = len(orders) - 1
+    while low <= high:
+        mid = (low + high) // 2
+        mid_no = orders[mid]["order_no"]
+        if mid_no == order_no:
+            return mid
+        elif mid_no < order_no:
+            low = mid + 1                      # target is in the right half
+        else:
+            high = mid - 1                     # target is in the left half
+    return -1                                  # not found
 
-def test_search_boundaries():
-    orders = make_orders([1, 2, 3, 4, 5])
-    for algo in (linear_search, binary_search):
-        assert algo(orders, 1)["id"] == 1
-        assert algo(orders, 5)["id"] == 5
 
-def test_search_empty_and_single():
-    for algo in (linear_search, binary_search):
-        assert algo([], 1) is None
-        assert algo(make_orders([7]), 7)["id"] == 7
+# ---------- SORTING (for the sales report) ----------
+# Both take a list of dicts and the dict key to sort by (like "total").
+# Both return a NEW sorted list and leave the original alone.
 
-# --- sort ---
-def test_sorts_match():
-    orders = [{"id": 1, "total": 50}, {"id": 2, "total": 10}, {"id": 3, "total": 30}]
-    for algo in (bubble_sort, merge_sort):
-        assert [o["total"] for o in algo(orders, "total")] == [10, 30, 50]
+def bubble_sort(items, key):
+    """Swap neighbors that are out of order, pass after pass. O(n^2)."""
+    data = list(items)                         # copy
+    n = len(data)
+    for i in range(n - 1):
+        swapped = False
+        for j in range(n - 1 - i):             # last i items are already in place
+            if data[j][key] > data[j + 1][key]:
+                data[j], data[j + 1] = data[j + 1], data[j]
+                swapped = True
+        if not swapped:                        # no swaps means already sorted
+            break
+    return data
 
-def test_sort_does_not_mutate_original():
-    for algo in (bubble_sort, merge_sort):
-        orders = [{"id": 1, "total": 50}, {"id": 2, "total": 10}]
-        algo(orders, "total")
-        assert orders[0]["total"] == 50
 
-def test_sort_reverse_and_edge_cases():
-    for algo in (bubble_sort, merge_sort):
-        assert algo([], "total") == []
-        one = [{"id": 1, "total": 5}]
-        assert algo(one, "total") == one
-        orders = [{"id": 1, "total": 1}, {"id": 2, "total": 3}, {"id": 3, "total": 2}]
-        assert [o["total"] for o in algo(orders, "total", reverse=True)] == [3, 2, 1]
+def merge_sort(items, key):
+    """Split in half, sort each half, merge them back. O(n log n)."""
+    if len(items) <= 1:
+        return list(items)
+    mid = len(items) // 2
+    left = merge_sort(items[:mid], key)
+    right = merge_sort(items[mid:], key)
+    return _merge(left, right, key)
 
-def test_sort_stable_with_duplicates():
-    orders = [{"id": 1, "total": 5}, {"id": 2, "total": 5}, {"id": 3, "total": 1}]
-    for algo in (bubble_sort, merge_sort):
-        assert [o["id"] for o in algo(orders, "total")] == [3, 1, 2]
 
-def test_random_data_matches_builtin():
-    random.seed(1)
-    orders = [{"id": i, "total": random.randint(1, 100)} for i in range(300)]
-    expected = [o["total"] for o in sorted(orders, key=lambda o: o["total"])]
-    for algo in (bubble_sort, merge_sort):
-        assert [o["total"] for o in algo(orders, "total")] == expected
+def _merge(left, right, key):
+    result = []
+    i = 0
+    j = 0
+    while i < len(left) and j < len(right):
+        if left[i][key] <= right[j][key]:      # <= keeps equal items in original order
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    result.extend(left[i:])                    # one side may have leftovers
+    result.extend(right[j:])
+    return result
