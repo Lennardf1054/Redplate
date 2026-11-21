@@ -27,12 +27,27 @@ _next_order_no = 1
 
 
 # ---------- STARTUP ----------
+def ensure_admin():
+    """Create the default admin account if none exists. Only the hash is stored."""
+    if db.get_admin(config.ADMIN_USERNAME) is None:
+        db.add_admin(
+            config.ADMIN_USERNAME,
+            generate_password_hash(config.ADMIN_PASSWORD, method="pbkdf2:sha256"),
+        )
+
+
+def check_admin(username, password):
+    admin = db.get_admin(username)
+    return admin is not None and check_password_hash(admin["password_hash"], password)
+
 
 def init():
     """Create the database if needed, then load everything into the structures."""
     global _menu, _orders, _normal_queue, _urgent_heap, _carts, _next_order_no
     db.create_tables()
     db.seed_sample_data()
+
+    ensure_admin()
 
 
     _menu = HashTable()

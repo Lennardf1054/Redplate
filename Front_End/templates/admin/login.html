@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Admin Login - QuickServe{% endblock %}
 
-{% block nav %}
-  {% include "admin/_nav.html" %}
-{% endblock %}
-
 {% block content %}
   <div class="card" style="max-width: 400px; margin: 60px auto;">
     <h2>Admin Login</h2>
@@ -16,11 +12,6 @@
       <input type="password" id="password" name="password" required>
 
       <button type="submit" style="width: 100%;">Log in</button>
-    </form>
-
-    <!-- TEMPORARY: remove when real login is built -->
-    <form action="/admin/dashboard" method="get" style="margin-top: 10px;">
-      <button type="submit" class="secondary" style="width: 100%;">[TEMP] Go to Dashboard</button>
     </form>
 
     <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">

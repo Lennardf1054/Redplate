@@ -1,0 +1,12 @@
+<div class="card">
+  <h2>Order Placed!</h2>
+  <h1 style="font-size: 2.5rem; margin: 10px 0;">Order #{{ order.order_no }}</h1>
+  <p>Table: <strong>{{ order.table_no }}</strong></p>
+  <p>Total: <strong>₱{{ order.total }}</strong></p>
+
+  <div class="steps">
+    {% for step in ["Pending", "Preparing", "Ready", "Completed"] %}
+      <div class="step {% if step == order.status %}active{% endif %}">{{ step }}</div>
+    {% endfor %}
+  </div>
+</div>

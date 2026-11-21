@@ -18,6 +18,10 @@ def test_service():
         db.use_database(os.path.join(folder, "test.db"))
         service.init()
 
+        assert service.check_admin("admin", "admin123")
+        assert not service.check_admin("admin", "wrong")
+        assert not service.check_admin("nobody", "admin123")
+        
         # menu: search and sort
         assert "Chicken Adobo" in [m["name"] for m in service.get_menu()]
         assert [m["name"] for m in service.get_menu(search="adobo")] == ["Chicken Adobo"]

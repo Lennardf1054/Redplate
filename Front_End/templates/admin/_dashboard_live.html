@@ -1,0 +1,44 @@
+{% if next_order %}
+  <h3>
+    Next to serve: #{{ next_order.order_no }} (Table {{ next_order.table_no }})
+    {% if next_order.urgent %}<strong>(URGENT)</strong>{% endif %}
+  </h3>
+{% else %}
+  <h3>No pending orders.</h3>
+{% endif %}
+
+<table>
+  <tr>
+    <th>Order #</th>
+    <th>Table</th>
+    <th>Items</th>
+    <th>Waiting</th>
+    <th>Status</th>
+    <th>Action</th>
+  </tr>
+  {% for order in orders %}
+    <tr>
+      <td>{{ order.order_no }}</td>
+      <td>{{ order.table_no }}</td>
+      <td>{{ order.items }}</td>
+      <td>
+        {{ order.minutes_waiting }} min
+        {% if order.urgent %}<strong>(URGENT)</strong>{% endif %}
+      </td>
+      <td>{{ order.status }}</td>
+      <td>
+        {% if order.status == "Pending" %}
+          {% set next_status = "Preparing" %}
+        {% elif order.status == "Preparing" %}
+          {% set next_status = "Ready" %}
+        {% else %}
+          {% set next_status = "Completed" %}
+        {% endif %}
+        <form action="/admin/orders/{{ order.order_no }}/status" method="post">
+          <input type="hidden" name="status" value="{{ next_status }}">
+          <button type="submit">Mark {{ next_status }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+</table>

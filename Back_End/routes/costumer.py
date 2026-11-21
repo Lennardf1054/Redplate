@@ -86,3 +86,11 @@ def order_status(order_no):
     if order is None:
         return "Order not found", 404
     return render_template("costumer/status.html", order=order)
+
+
+@customer_bp.route("/order/<int:order_no>/live")
+def order_status_live(order_no):
+    order = service.find_order(order_no)
+    if order is None:
+        return "Order not found", 404
+    return render_template("costumer/_order_card.html", order=order)

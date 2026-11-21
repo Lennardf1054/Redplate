@@ -5,42 +5,10 @@
   {% include "admin/_nav.html" %}
 {% endblock %}
 
-
 {% block content %}
   <h2>Admin Dashboard</h2>
 
-
-  {% if next_order %}
-    <h3>Next to serve: #{{ next_order.order_no }} (Table {{ next_order.table_no }})</h3>
-  {% else %}
-    <h3>No pending orders.</h3>
-  {% endif %}
-
-  <table>
-    <tr>
-      <th>Order #</th>
-      <th>Table</th>
-      <th>Items</th>
-      <th>Waiting</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-    {% for order in orders %}
-      <tr>
-        <td>{{ order.order_no }}</td>
-        <td>{{ order.table_no }}</td>
-        <td>{{ order.items }}</td>
-        <td>
-          {{ order.minutes_waiting }} min
-          {% if order.minutes_waiting >= 10 %}<strong>(URGENT)</strong>{% endif %}
-        </td>
-        <td>{{ order.status }}</td>
-        <td>
-          <button>Preparing</button>
-          <button>Ready</button>
-          <button>Completed</button>
-        </td>
-      </tr>
-    {% endfor %}
-  </table>
+  <div data-refresh-url="/admin/dashboard/live">
+    {% include "admin/_dashboard_live.html" %}
+  </div>
 {% endblock %}
