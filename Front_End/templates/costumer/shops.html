@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Shops - QuickServe{% endblock %}
+
+{% block nav %}
+  {% include "costumer/_nav.html" %}
+{% endblock %}
+
+{% block content %}
+  <h2>Choose a shop</h2>
+
+  {% if shops %}
+    <div class="menu-grid">
+      {% for shop in shops %}
+        <div class="menu-item">
+          <strong>{{ shop.name }}</strong>
+          <span>{{ shop.item_count }} item{{ "" if shop.item_count == 1 else "s" }} available</span>
+          <a href="/shop/{{ shop.id }}" class="btn">See menu</a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No shops are open yet.</p>
+  {% endif %}
+{% endblock %}

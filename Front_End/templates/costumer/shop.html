@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ shop.name }} - QuickServe{% endblock %}
+
+{% block nav %}
+  {% include "costumer/_nav.html" %}
+{% endblock %}
+
+{% block content %}
+  <div class="shop-layout">
+    <section>
+      <h2>{{ shop.name }}</h2>
+
+      <form action="/shop/{{ shop.id }}" method="get" style="margin-bottom: 20px;">
+        <input type="search" name="q" placeholder="Search food..." value="{{ q }}">
+        <select name="sort">
+          <option value="name" {% if sort_by == "name" %}selected{% endif %}>Sort by name</option>
+          <option value="price" {% if sort_by == "price" %}selected{% endif %}>Sort by price</option>
+        </select>
+        <button type="submit">Search</button>
+      </form>
+
+      {% if not items %}
+        <p>No items found.</p>
+      {% endif %}
+
+      <div class="menu-grid">
+        {% for item in items %}
+          <div class="menu-item">
+            <strong>{{ item.name }}</strong>
+            <span class="price">₱{{ item.price }}</span>
+            {% if item.stock > 0 %}
+              <form action="/shop/{{ shop.id }}/cart/add/{{ item.id }}" method="post" data-ajax>
+                <button type="submit">Add to Cart</button>
+              </form>
+            {% else %}
+              <span class="pill urgent">Out of stock</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div data-cart-box>
+        {% include "costumer/_cart_box.html" %}
+      </div>
+      <div data-refresh-url="/shop/{{ shop.id }}/orders-box">
+        {% include "costumer/_orders_box.html" %}
+      </div>
+    </aside>
+  </div>
+{% endblock %}

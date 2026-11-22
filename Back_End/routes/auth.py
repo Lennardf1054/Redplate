@@ -35,7 +35,7 @@ def _get_json(url, token):
 @auth_bp.route("/login")
 def login():
     if session.get("student"):
-        return redirect(url_for("customer.menu"))
+        return redirect(url_for("customer.shops"))
     return render_template("costumer/login.html", google_ready=config.GOOGLE_ENABLED,
                            demo_mode=config.DEMO_LOGIN, domain=config.ALLOWED_EMAIL_DOMAIN)
 
@@ -54,7 +54,7 @@ def _finish_login(email):
         flash(str(error))
         return redirect(url_for("auth.login"))
     session["student"] = email
-    return redirect(url_for("customer.menu"))
+    return redirect(url_for("customer.shops"))
 
 
 # ---- sign in with Google (OAuth 2.0 authorization code flow) ----

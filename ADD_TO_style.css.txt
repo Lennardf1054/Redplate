@@ -1,4 +1,5 @@
-/* Add these lines to the END of Front_End/static/style.css */
+/* Add these lines to the END of Front_End/static/style.css
+   (if you added the earlier version of this snippet, you can replace it with this one) */
 
 /* flash messages (errors and confirmations) */
 .flash {
@@ -9,7 +10,8 @@
   margin-bottom: 16px;
 }
 
-/* the +/- buttons in the cart are forms now */
+/* the +/- buttons in the cart are forms */
+.qty-control { display: flex; align-items: center; gap: 6px; }
 .qty-control form { display: inline; margin: 0; }
 
 /* phone layout: let the top bar and nav wrap instead of overflowing */
@@ -18,3 +20,29 @@
 
 /* menu management: keep the edit boxes readable on small screens */
 td input, td select { min-width: 80px; }
+
+/* shop page: menu on the left, cart and orders in a sidebar on the right */
+.shop-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+.sidebar { position: sticky; top: 16px; }
+@media (max-width: 800px) {
+  .shop-layout { grid-template-columns: 1fr; }   /* on a phone the sidebar goes below the menu */
+  .sidebar { position: static; }
+}
+.cart-line {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border, #eee);
+}
+.cart-line form { margin: 0; }
+.order-line { padding: 8px 0; border-bottom: 1px solid var(--border, #eee); }
+
+/* which shop the staff member is signed in to */
+.shop-badge { width: 100%; font-size: 0.9rem; }

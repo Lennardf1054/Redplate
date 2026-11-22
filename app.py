@@ -23,7 +23,7 @@ app.register_blueprint(admin_bp)
 @app.route("/")
 def home():
     if session.get("student"):
-        return redirect(url_for("customer.menu"))
+        return redirect(url_for("customer.shops"))
     return redirect(url_for("auth.login"))
 
 

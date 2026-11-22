@@ -10,9 +10,24 @@ python app.py
 ```
 
 Open http://127.0.0.1:5000 (students) and http://127.0.0.1:5000/admin/login (staff).
-Default staff account: `admin` / `admin123` (set `QUICKSERVE_ADMIN_USER` and
-`QUICKSERVE_ADMIN_PASSWORD` before the first run to use something else).
 The database file `quickserve.db` is created automatically; delete it to start fresh.
+
+## How it works
+
+The canteen has several **shops**. A student signs in, picks a shop, and orders from that shop's
+menu. A sidebar on the right of the shop page shows the student's cart and orders and updates
+without reloading the page. Each shop's staff sign in with **their own shop password** and can
+only see and change their own shop. The **canteen manager** adds shops: adding a shop also creates
+its login at the same time.
+
+| Who | Where | Default login |
+|---|---|---|
+| Student | `/` (school Google account) | demo mode asks for a school email |
+| Shop staff | `/admin/login`, pick the shop | every sample shop starts with `shop123` |
+| Canteen manager | `/admin/login`, pick Canteen manager | `admin` account, password `admin123` |
+
+Change the defaults before a real pilot: set `QUICKSERVE_ADMIN_PASSWORD` and
+`QUICKSERVE_SHOP_PASSWORD` before the first run, and the manager can change any shop's password.
 
 ## Student sign-in (school Google account)
 
@@ -44,10 +59,10 @@ When the client ID and secret are set, demo mode switches off by itself
 
 | Piece | Used for |
 |---|---|
-| Hash Table | menu lookup by item id, one cart per browser session, cart quantities |
+| Hash Table | shops, menu lookup by item id, one cart per student per shop, cart quantities |
 | Stack | the Undo button in the cart (also the BST traversal) |
-| Queue | normal pending orders, first come first served |
-| Min-Heap | urgent orders ("I have class soon"), served before the queue |
+| Queue | each shop's normal pending orders, first come first served |
+| Min-Heap | each shop's urgent orders ("I have class soon"), served before its queue |
 | Binary Search Tree | record store of every order; sorted traversal |
 | Binary search | finding an order by number in the sorted order list |
 | Merge sort | menu sort, cart display, sales report |

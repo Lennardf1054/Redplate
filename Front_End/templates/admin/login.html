@@ -1,12 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Admin Login - QuickServe{% endblock %}
+{% block title %}Staff Login - QuickServe{% endblock %}
 
 {% block content %}
   <div class="card" style="max-width: 400px; margin: 60px auto;">
-    <h2>Admin Login</h2>
+    <h2>Staff Login</h2>
     <form action="/admin/login" method="post">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" required>
+      <label for="account">Sign in as</label>
+      <select id="account" name="account">
+        {% for shop in shops %}
+          <option value="{{ shop.id }}">{{ shop.name }}</option>
+        {% endfor %}
+        <option value="manager">Canteen manager (adds shops)</option>
+      </select>
 
       <label for="password">Password</label>
       <input type="password" id="password" name="password" required>
@@ -17,7 +22,7 @@
     <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
 
     <p style="text-align: center; font-size: 0.9rem; margin: 0;">
-      <a href="/menu" style="color: var(--primary);">← Back to the menu</a>
+      <a href="/shops" style="color: var(--primary);">← Back to the shops</a>
     </p>
   </div>
 {% endblock %}

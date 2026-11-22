@@ -12,6 +12,7 @@
     <table>
       <tr>
         <th>Order #</th>
+        <th>Shop</th>
         <th>Items</th>
         <th>Status</th>
         <th>Total</th>
@@ -19,6 +20,7 @@
       {% for order in orders %}
         <tr>
           <td><a href="/order/{{ order.order_no }}">#{{ order.order_no }}</a></td>
+          <td>{{ order.shop_name }}</td>
           <td>{{ order.items_text }}</td>
           <td>{{ order.status }}</td>
           <td>₱{{ order.total }}</td>
@@ -27,6 +29,6 @@
     </table>
   {% else %}
     <p>You have no orders yet.</p>
-    <a href="/menu" class="btn">Browse the menu</a>
+    <a href="/shops" class="btn">Choose a shop</a>
   {% endif %}
 {% endblock %}

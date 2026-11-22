@@ -1,7 +1,14 @@
 <div class="inline-nav">
-  <a href="/admin/dashboard">Dashboard</a>
-  <a href="/admin/orders">All Orders</a>
-  <a href="/admin/menu">Menu</a>
-  <a href="/admin/reports">Reports</a>
+  {% if session.get("manager") %}
+    <a href="/admin/shops">Shops</a>
+  {% elif session.get("shop_id") is not none %}
+    <a href="/admin/dashboard">Dashboard</a>
+    <a href="/admin/orders">All Orders</a>
+    <a href="/admin/menu">Menu</a>
+    <a href="/admin/reports">Reports</a>
+  {% endif %}
   <a href="/admin/logout">Logout</a>
 </div>
+{% if session.get("shop_name") %}
+  <div class="shop-badge">Shop: <strong>{{ session.get("shop_name") }}</strong></div>
+{% endif %}

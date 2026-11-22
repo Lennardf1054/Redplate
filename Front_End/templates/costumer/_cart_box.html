@@ -1,0 +1,49 @@
+{% if show_flashes %}
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="card">
+  <h3>Your cart</h3>
+
+  {% if cart_items %}
+    {% for item in cart_items %}
+      <div class="cart-line">
+        <div>
+          <strong>{{ item.name }}</strong><br>
+          <small>₱{{ item.price }} each</small>
+        </div>
+        <div class="qty-control">
+          <form action="/shop/{{ shop.id }}/cart/decrease/{{ item.id }}" method="post" data-ajax>
+            <button class="secondary" aria-label="Decrease">−</button>
+          </form>
+          <span>{{ item.qty }}</span>
+          <form action="/shop/{{ shop.id }}/cart/add/{{ item.id }}" method="post" data-ajax>
+            <button class="secondary" aria-label="Increase">+</button>
+          </form>
+        </div>
+        <div>₱{{ item.price * item.qty }}</div>
+        <form action="/shop/{{ shop.id }}/cart/remove/{{ item.id }}" method="post" data-ajax>
+          <button class="secondary" aria-label="Remove">✕</button>
+        </form>
+      </div>
+    {% endfor %}
+
+    <p><strong>Total: ₱{{ cart_total }}</strong></p>
+
+    <form action="/shop/{{ shop.id }}/cart/undo" method="post" data-ajax>
+      <button class="secondary">Undo last change</button>
+    </form>
+
+    <form action="/shop/{{ shop.id }}/checkout" method="post" data-ajax style="margin-top: 12px;">
+      <label for="table_no">Table number</label>
+      <input type="number" id="table_no" name="table_no" min="1" max="50" required>
+      <label>
+        <input type="checkbox" name="urgent"> I have class soon (priority)
+      </label>
+      <button type="submit" style="width: 100%;">Place Order</button>
+    </form>
+  {% else %}
+    <p>Your cart is empty. Tap Add to Cart on an item.</p>
+  {% endif %}
+</div>

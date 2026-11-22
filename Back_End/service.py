@@ -18,14 +18,34 @@ STATUSES = ["Pending", "Preparing", "Ready", "Completed"]
 MAX_TABLE_NO = 50
 MAX_QTY_PER_ITEM = 10
 URGENT_MINUTES = 10
+MIN_PASSWORD_LENGTH = 6
+
+# Shops created the very first time the app runs on an empty database.
+SAMPLE_SHOPS = [
+    ("Mang Tomas Kitchen", [("Chicken Adobo", "Meals", 60, 10),
+                            ("Pancit Canton", "Meals", 35, 5),
+                            ("Plain Rice", "Meals", 10, 30)]),
+    ("Sip and Snack", [("Iced Tea", "Drinks", 20, 0),
+                       ("Fried Banana", "Snacks", 15, 20),
+                       ("Halo-Halo", "Snacks", 45, 8)]),
+]
+
+
+class Lanes:
+    """One shop's waiting line: a Queue for normal orders, a Min-Heap for urgent ones."""
+
+    def __init__(self):
+        self.normal = Queue()
+        self.urgent = MinHeap()
+
 
 # The in-memory structures. init() fills them from the database.
-_menu = None            # Hash Table: item id -> item dict
-_orders = None          # BST: order number -> order dict (the record store)
-_order_list = None      # list of the same order dicts, sorted by order number (for binary search)
-_normal_queue = None    # Queue: order numbers of normal pending orders
-_urgent_heap = None     # Min-Heap: (priority, order number) of urgent pending orders
-_carts = None           # Hash Table: session id -> Cart
+_shops = None           # Hash Table: shop id -> shop dict (id, name, password_hash)
+_lanes = None           # Hash Table: shop id -> Lanes
+_menu = None            # Hash Table: item id -> item dict (every shop's items)
+_orders = None          # BST: order number -> order dict (the record store, every shop)
+_order_list = None      # the same order dicts as a list sorted by order number (binary search)
+_carts = None           # Hash Table: "email|shop id" -> Cart
 _next_order_no = 1
 
 
@@ -33,10 +53,15 @@ _next_order_no = 1
 
 def init():
     """Create the database if needed, then load everything into the structures."""
-    global _menu, _orders, _order_list, _normal_queue, _urgent_heap, _carts, _next_order_no
+    global _shops, _lanes, _menu, _orders, _order_list, _carts, _next_order_no
     db.create_tables()
-    db.seed_sample_data()
+    _prepare_shops()
     ensure_admin()
+
+    _shops = HashTable()
+    _lanes = HashTable()
+    for shop in db.load_shops():
+        _register_shop(shop)
 
     _menu = HashTable()
     for item in db.load_menu_items():
@@ -44,25 +69,37 @@ def init():
         _menu.put(item["id"], item)
 
     _orders = BST()
-    _normal_queue = Queue()
-    _urgent_heap = MinHeap()
     _carts = HashTable()
-
     for order in db.load_orders():                     # oldest first
         order["total"] = _tidy(order["total"])
         for line in order["items"]:
             line["price"] = _tidy(line["price"])
             line["name"] = _menu.get(line["menu_item_id"])["name"]
         _orders.insert(order["order_no"], order)
-        if order["status"] == "Pending":
+        if order["status"] == "Pending" and _lanes.contains(order["shop_id"]):
             _enqueue_pending(order)
 
     _order_list = [order for _, order in _orders.inorder()]   # the BST hands them over sorted
     _next_order_no = db.get_max_order_no() + 1
 
 
+def _prepare_shops():
+    """Make sure at least one shop exists before the structures are loaded."""
+    if db.load_shops():
+        return
+    password_hash = generate_password_hash(config.DEFAULT_SHOP_PASSWORD, method="pbkdf2:sha256")
+    if db.has_unassigned_rows():                       # data from the old one-shop version
+        shop_id = db.add_shop("Main Canteen", password_hash)
+        db.assign_unassigned_rows(shop_id)
+        return
+    for name, items in SAMPLE_SHOPS:                   # brand new database: sample shops
+        shop_id = db.add_shop(name, password_hash)
+        for item in items:
+            db.add_menu_item(shop_id, *item)
+
+
 def ensure_admin():
-    """Create the default admin account if none exists. Only the hash is stored."""
+    """Create the canteen manager account if none exists. Only the hash is stored."""
     if db.get_admin(config.ADMIN_USERNAME) is None:
         db.add_admin(
             config.ADMIN_USERNAME,
@@ -71,6 +108,7 @@ def ensure_admin():
 
 
 def check_admin(username, password):
+    """The canteen manager login (the one that adds shops)."""
     admin = db.get_admin(username)
     return admin is not None and check_password_hash(admin["password_hash"], password)
 
@@ -94,13 +132,87 @@ def _tidy(number):
     return int(number) if number.is_integer() else round(number, 2)
 
 
-# ---------- SCHEDULING (Queue + Min-Heap) ----------
+# ---------- SHOPS (Hash Table) ----------
+
+def _register_shop(shop):
+    _shops.put(shop["id"], {"id": shop["id"], "name": shop["name"],
+                            "password_hash": shop["password_hash"]})
+    _lanes.put(shop["id"], Lanes())
+
+
+def _get_shop(shop_id):
+    if not _shops.contains(shop_id):
+        raise ValueError("That shop does not exist")
+    return _shops.get(shop_id)
+
+
+def get_shop(shop_id):
+    """The public details of one shop (never the password hash)."""
+    shop = _get_shop(shop_id)
+    return {"id": shop["id"], "name": shop["name"]}
+
+
+def list_shops():
+    shops = [{"id": shop["id"], "name": shop["name"]} for _, shop in _shops.items()]
+    return merge_sort(shops, "name")
+
+
+def shop_cards():
+    """The shops for the student page, each with how many items can be ordered right now."""
+    cards = list_shops()
+    for card in cards:
+        card["item_count"] = sum(
+            1 for _, item in _menu.items()
+            if item["shop_id"] == card["id"] and item["is_available"] and item["stock"] > 0
+        )
+    return cards
+
+
+def _check_new_password(password):
+    password = str(password)
+    if not MIN_PASSWORD_LENGTH <= len(password) <= 100:
+        raise ValueError(f"Password must be {MIN_PASSWORD_LENGTH} to 100 characters")
+    return generate_password_hash(password, method="pbkdf2:sha256")
+
+
+def add_shop(name, password):
+    """Create a shop and its login account in one step. Returns the new shop id."""
+    name = " ".join(str(name).split())                 # trim and collapse extra spaces
+    if not 2 <= len(name) <= 40:
+        raise ValueError("Shop name must be 2 to 40 characters")
+    for _, shop in _shops.items():
+        if shop["name"].lower() == name.lower():
+            raise ValueError("A shop with that name already exists")
+    password_hash = _check_new_password(password)
+    try:
+        shop_id = db.add_shop(name, password_hash)     # save first
+    except sqlite3.IntegrityError:
+        raise ValueError("A shop with that name already exists")
+    _register_shop({"id": shop_id, "name": name, "password_hash": password_hash})
+    return shop_id
+
+
+def reset_shop_password(shop_id, new_password):
+    shop = _get_shop(shop_id)
+    password_hash = _check_new_password(new_password)
+    db.update_shop_password(shop_id, password_hash)    # save first
+    shop["password_hash"] = password_hash
+
+
+def check_shop_login(shop_id, password):
+    if not _shops.contains(shop_id):
+        return False
+    return check_password_hash(_shops.get(shop_id)["password_hash"], password)
+
+
+# ---------- SCHEDULING (one Queue and one Min-Heap per shop) ----------
 
 def _enqueue_pending(order):
+    lanes = _lanes.get(order["shop_id"])
     if order["priority"] == 0:
-        _urgent_heap.push((0, order["order_no"]))      # urgent lane
+        lanes.urgent.push((0, order["order_no"]))      # urgent lane
     else:
-        _normal_queue.enqueue(order["order_no"])       # normal lane
+        lanes.normal.enqueue(order["order_no"])        # normal lane
 
 
 def _is_pending(order_no):
@@ -108,37 +220,41 @@ def _is_pending(order_no):
     return index != -1 and _order_list[index]["status"] == "Pending"
 
 
-def _next_to_serve():
-    """Order number to serve next, or None. Urgent lane first, then the queue.
+def _next_to_serve(shop_id):
+    """Order number this shop should serve next, or None. Urgent lane first, then the queue.
     Orders that are no longer Pending are thrown away when they reach the front
     (lazy deletion), so we never have to remove from the middle of a queue."""
-    while not _urgent_heap.is_empty():
-        order_no = _urgent_heap.peek()[1]
+    lanes = _lanes.get(shop_id)
+    while not lanes.urgent.is_empty():
+        order_no = lanes.urgent.peek()[1]
         if _is_pending(order_no):
             return order_no
-        _urgent_heap.pop()
-    while not _normal_queue.is_empty():
-        order_no = _normal_queue.peek()
+        lanes.urgent.pop()
+    while not lanes.normal.is_empty():
+        order_no = lanes.normal.peek()
         if _is_pending(order_no):
             return order_no
-        _normal_queue.dequeue()
+        lanes.normal.dequeue()
     return None
 
 
 # ---------- MENU (Hash Table) ----------
 
-def _get_item(item_id):
-    if not _menu.contains(item_id):
+def _get_item(shop_id, item_id):
+    """The item, but only if it belongs to this shop (a shop can never touch another's menu)."""
+    if not _menu.contains(item_id) or _menu.get(item_id)["shop_id"] != shop_id:
         raise ValueError("That menu item does not exist")
     return _menu.get(item_id)
 
 
-def get_menu(search="", sort_by="name", include_hidden=False):
+def get_menu(shop_id, search="", sort_by="name", include_hidden=False):
     search = search.strip().lower()
     if sort_by not in ("name", "price"):
         sort_by = "name"
     items = []
     for _, item in _menu.items():
+        if item["shop_id"] != shop_id:
+            continue
         if not include_hidden and not item["is_available"]:
             continue
         if search and search not in item["name"].lower():
@@ -167,17 +283,18 @@ def _clean_menu_input(name, category, price, stock):
     return name, category, _tidy(price), stock
 
 
-def add_menu_item(name, category, price, stock):
+def add_menu_item(shop_id, name, category, price, stock):
+    _get_shop(shop_id)
     name, category, price, stock = _clean_menu_input(name, category, price, stock)
-    item_id = db.add_menu_item(name, category, price, stock)      # save first
-    _menu.put(item_id, {"id": item_id, "name": name, "category": category,
+    item_id = db.add_menu_item(shop_id, name, category, price, stock)      # save first
+    _menu.put(item_id, {"id": item_id, "shop_id": shop_id, "name": name, "category": category,
                         "price": price, "stock": stock, "is_available": 1})
     return item_id
 
 
-def update_menu_item(item_id, name, category, price, stock, available=None):
+def update_menu_item(shop_id, item_id, name, category, price, stock, available=None):
     """available=None keeps the current setting; True or False shows or hides the item."""
-    item = _get_item(item_id)
+    item = _get_item(shop_id, item_id)
     name, category, price, stock = _clean_menu_input(name, category, price, stock)
     is_available = item["is_available"] if available is None else (1 if available else 0)
     db.update_menu_item(item_id, name, category, price, stock, is_available)
@@ -185,9 +302,9 @@ def update_menu_item(item_id, name, category, price, stock, available=None):
                 is_available=is_available)
 
 
-def remove_menu_item(item_id):
+def remove_menu_item(shop_id, item_id):
     """Delete the item. If past orders use it, hide it instead. Returns what happened."""
-    item = _get_item(item_id)
+    item = _get_item(shop_id, item_id)
     try:
         db.delete_menu_item(item_id)
     except sqlite3.IntegrityError:                     # old orders still point to it
@@ -199,10 +316,10 @@ def remove_menu_item(item_id):
     return "deleted"
 
 
-# ---------- CART (Hash Table + Stack) ----------
+# ---------- CART (Hash Table + Stack), one cart per student per shop ----------
 
 class Cart:
-    """One customer's cart. Hash Table = item id -> quantity. Stack = undo history."""
+    """One cart. Hash Table = item id -> quantity. Stack = undo history."""
 
     def __init__(self):
         self.lines = HashTable()
@@ -231,15 +348,20 @@ class Cart:
             self.lines.remove(item_id)
 
 
-def _get_cart(session_id):
-    if not _carts.contains(session_id):
-        _carts.put(session_id, Cart())
-    return _carts.get(session_id)
+def _cart_key(email, shop_id):
+    return f"{email}|{shop_id}"
 
 
-def cart_add(session_id, item_id):
-    item = _get_item(item_id)
-    cart = _get_cart(session_id)
+def _get_cart(email, shop_id):
+    key = _cart_key(email, shop_id)
+    if not _carts.contains(key):
+        _carts.put(key, Cart())
+    return _carts.get(key)
+
+
+def cart_add(email, shop_id, item_id):
+    item = _get_item(shop_id, item_id)
+    cart = _get_cart(email, shop_id)
     new_qty = cart.qty(item_id) + 1
     if not item["is_available"] or item["stock"] <= 0:
         raise ValueError(f'{item["name"]} is out of stock')
@@ -250,35 +372,35 @@ def cart_add(session_id, item_id):
     cart.set_qty(item_id, new_qty)
 
 
-def cart_decrease(session_id, item_id):
-    cart = _get_cart(session_id)
+def cart_decrease(email, shop_id, item_id):
+    cart = _get_cart(email, shop_id)
     qty = cart.qty(item_id)
     if qty == 0:
         raise ValueError("That item is not in your cart")
     cart.set_qty(item_id, qty - 1)
 
 
-def cart_remove(session_id, item_id):
-    cart = _get_cart(session_id)
+def cart_remove(email, shop_id, item_id):
+    cart = _get_cart(email, shop_id)
     if cart.qty(item_id) == 0:
         raise ValueError("That item is not in your cart")
     cart.set_qty(item_id, 0)
 
 
-def cart_undo(session_id):
+def cart_undo(email, shop_id):
     try:
-        _get_cart(session_id).undo()
+        _get_cart(email, shop_id).undo()
     except IndexError:
         raise ValueError("Nothing to undo")
 
 
-def cart_view(session_id):
+def cart_view(email, shop_id):
     """Returns (lines, total). Each line: id, name, price, qty."""
-    cart = _get_cart(session_id)
+    cart = _get_cart(email, shop_id)
     lines = []
     total = 0
     for item_id, qty in cart.lines.items():
-        if not _menu.contains(item_id):                # the admin deleted it meanwhile
+        if not _menu.contains(item_id):                # the shop deleted it meanwhile
             cart._apply(item_id, 0)
             continue
         item = _menu.get(item_id)
@@ -287,7 +409,7 @@ def cart_view(session_id):
     return merge_sort(lines, "id"), total
 
 
-# ---------- ORDERS (Queue + Min-Heap + BST + binary search) ----------
+# ---------- ORDERS (Queue + Min-Heap per shop, BST, binary search) ----------
 
 def _check_table_no(table_no):
     table_no = str(table_no).strip()
@@ -296,18 +418,20 @@ def _check_table_no(table_no):
     return str(int(table_no))
 
 
-def place_order(session_id, table_no, urgent=False, customer_email=""):
-    """Turn the cart into an order. Returns the new order number."""
+def place_order(email, shop_id, table_no, urgent=False):
+    """Turn this student's cart for this shop into an order. Returns the new order number."""
     global _next_order_no
+    _get_shop(shop_id)
     table_no = _check_table_no(table_no)
-    if not _carts.contains(session_id) or _carts.get(session_id).is_empty():
+    key = _cart_key(email, shop_id)
+    if not _carts.contains(key) or _carts.get(key).is_empty():
         raise ValueError("Your cart is empty")
-    cart = _carts.get(session_id)
+    cart = _carts.get(key)
 
     lines = []                                         # re-check stock at the last moment
     total = 0
     for item_id, qty in cart.lines.items():
-        item = _get_item(item_id)
+        item = _get_item(shop_id, item_id)
         if not item["is_available"] or qty > item["stock"]:
             raise ValueError(f'Not enough stock for {item["name"]}')
         lines.append({"menu_item_id": item_id, "name": item["name"],
@@ -317,14 +441,14 @@ def place_order(session_id, table_no, urgent=False, customer_email=""):
     order_no = _next_order_no
     priority = 0 if urgent else 1
     created_at = db.save_order(order_no, table_no, "Pending", priority, total, lines,
-                               customer_email)
+                               email, shop_id)
 
     order = {"order_no": order_no, "table_no": table_no, "status": "Pending",
              "priority": priority, "total": total, "created_at": created_at,
-             "items": lines, "customer_email": customer_email}
+             "items": lines, "customer_email": email, "shop_id": shop_id}
     _orders.insert(order_no, order)                    # BST: store the record
     _order_list.append(order)                          # still sorted: new numbers are the biggest
-    _enqueue_pending(order)                            # Queue or Min-Heap: schedule it
+    _enqueue_pending(order)                            # this shop's Queue or Min-Heap
 
     for line in lines:                                 # take the stock
         item = _menu.get(line["menu_item_id"])
@@ -332,12 +456,14 @@ def place_order(session_id, table_no, urgent=False, customer_email=""):
         db.update_stock(item["id"], item["stock"])
 
     _next_order_no += 1
-    _carts.remove(session_id)
+    _carts.remove(key)
     return order_no
 
 
-def update_status(order_no, new_status):
+def update_status(shop_id, order_no, new_status):
     order = _find_record(order_no)
+    if order["shop_id"] != shop_id:                    # same message: do not reveal other shops' orders
+        raise ValueError(f"Order #{order_no} not found")
     if new_status not in STATUSES:
         raise ValueError("Unknown status")
     if STATUSES.index(new_status) != STATUSES.index(order["status"]) + 1:
@@ -358,6 +484,7 @@ def _order_view(order):
     created = datetime.fromisoformat(order["created_at"])
     waiting = int((datetime.now() - created).total_seconds() // 60)
     parts = [f'{line["quantity"]}x {line["name"]}' for line in order["items"]]
+    shop = _shops.get(order["shop_id"]) if _shops.contains(order["shop_id"]) else None
     return {
         "order_no": order["order_no"],
         "table_no": order["table_no"],
@@ -367,6 +494,8 @@ def _order_view(order):
         "minutes_waiting": waiting,
         "urgent": order["priority"] == 0 or waiting >= URGENT_MINUTES,
         "customer_email": order.get("customer_email", ""),
+        "shop_id": order["shop_id"],
+        "shop_name": shop["name"] if shop else "",
     }
 
 
@@ -375,31 +504,38 @@ def find_order(order_no):
     return _order_view(_order_list[index]) if index != -1 else None
 
 
-def my_orders(customer_email):
-    """One student's orders, newest first."""
-    mine = [order for order in _order_list if order["customer_email"] == customer_email]
-    return [_order_view(order) for order in reversed(mine)]
+def find_shop_order(shop_id, order_no):
+    """Like find_order, but only for an order that belongs to this shop."""
+    order = find_order(order_no)
+    return order if order and order["shop_id"] == shop_id else None
 
 
-def all_orders():
-    return [_order_view(order) for _, order in _orders.inorder()]
+def my_orders(email, limit=None):
+    """One student's orders from every shop, newest first."""
+    mine = [order for order in _order_list if order["customer_email"] == email]
+    views = [_order_view(order) for order in reversed(mine)]
+    return views if limit is None else views[:limit]
 
 
-def dashboard():
-    """Returns (next order to serve or None, list of active orders)."""
-    next_no = _next_to_serve()
+def all_orders(shop_id):
+    return [_order_view(order) for _, order in _orders.inorder() if order["shop_id"] == shop_id]
+
+
+def dashboard(shop_id):
+    """Returns (next order to serve or None, list of active orders) for one shop."""
+    next_no = _next_to_serve(shop_id)
     next_view = find_order(next_no) if next_no is not None else None
     active = [_order_view(order) for _, order in _orders.inorder()
-              if order["status"] in ("Pending", "Preparing", "Ready")]
+              if order["shop_id"] == shop_id and order["status"] in ("Pending", "Preparing", "Ready")]
     return next_view, active
 
 
-def sales_report(sort_by="order_no"):
-    """Returns (completed orders, total sales, sort used)."""
+def sales_report(shop_id, sort_by="order_no"):
+    """Returns (completed orders, total sales, sort used) for one shop."""
     if sort_by not in ("order_no", "total"):
         sort_by = "order_no"
     completed = [_order_view(order) for _, order in _orders.inorder()
-                 if order["status"] == "Completed"]
+                 if order["shop_id"] == shop_id and order["status"] == "Completed"]
     completed = merge_sort(completed, sort_by)
     total_sales = sum(order["total"] for order in completed)
     return completed, total_sales, sort_by

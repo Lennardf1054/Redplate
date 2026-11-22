@@ -5,6 +5,8 @@ DB_PATH = os.path.join(BASE_DIR, "quickserve.db")
 SECRET_KEY = os.environ.get("QUICKSERVE_SECRET", "dev-only-change-me")
 ADMIN_USERNAME = os.environ.get("QUICKSERVE_ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("QUICKSERVE_ADMIN_PASSWORD", "admin123")
+# The canteen manager (this admin account) adds shops. Sample shops start with this password.
+DEFAULT_SHOP_PASSWORD = os.environ.get("QUICKSERVE_SHOP_PASSWORD", "shop123")
 
 # Student sign-in with a school Google account.
 # Put the real values in environment variables, never in this file.

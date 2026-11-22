@@ -39,13 +39,19 @@ def create_tables():
     with closing(get_connection()) as conn:
         with conn:
             conn.executescript("""
+                CREATE TABLE IF NOT EXISTS shops (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                    password_hash TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS menu_items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     category TEXT NOT NULL,
                     price REAL NOT NULL CHECK (price > 0),
                     stock INTEGER NOT NULL CHECK (stock >= 0),
-                    is_available INTEGER NOT NULL DEFAULT 1
+                    is_available INTEGER NOT NULL DEFAULT 1,
+                    shop_id INTEGER NOT NULL DEFAULT 0
                 );
                 CREATE TABLE IF NOT EXISTS orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +61,8 @@ def create_tables():
                     priority INTEGER NOT NULL DEFAULT 0,
                     total REAL NOT NULL,
                     created_at TEXT NOT NULL,
-                    customer_email TEXT NOT NULL DEFAULT ''
+                    customer_email TEXT NOT NULL DEFAULT '',
+                    shop_id INTEGER NOT NULL DEFAULT 0
                 );
                 CREATE TABLE IF NOT EXISTS order_items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,37 +82,64 @@ def create_tables():
 
 def _add_missing_columns(conn):
     """Upgrade a database made by an older version of the app."""
-    columns = [row["name"] for row in conn.execute("PRAGMA table_info(orders)")]
-    if "customer_email" not in columns:
-        conn.execute("ALTER TABLE orders ADD COLUMN customer_email TEXT NOT NULL DEFAULT ''")
+    wanted = {
+        "orders": [("customer_email", "TEXT NOT NULL DEFAULT ''"),
+                   ("shop_id", "INTEGER NOT NULL DEFAULT 0")],
+        "menu_items": [("shop_id", "INTEGER NOT NULL DEFAULT 0")],
+    }
+    for table, columns in wanted.items():
+        existing = [row["name"] for row in conn.execute(f"PRAGMA table_info({table})")]
+        for name, definition in columns:
+            if name not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {definition}")
 
 
-def seed_sample_data():
-    """Add starter menu items, only if the menu is empty."""
-    if load_menu_items():
-        return
-    sample = [
-        ("Chicken Adobo", "Meals", 60, 10),
-        ("Pancit Canton", "Meals", 35, 5),
-        ("Iced Tea", "Drinks", 20, 0),
-        ("Fried Banana", "Snacks", 15, 20),
-    ]
-    for name, category, price, stock in sample:
-        add_menu_item(name, category, price, stock)
+# ---------- SHOPS (each shop is also a login account) ----------
+
+def add_shop(name, password_hash):
+    """Creates the shop and its login in one go. Returns the new shop id."""
+    cur = _execute("INSERT INTO shops (name, password_hash) VALUES (?, ?)", (name, password_hash))
+    return cur.lastrowid
+
+
+def load_shops():
+    return _query("SELECT id, name, password_hash FROM shops")
+
+
+def update_shop_password(shop_id, password_hash):
+    cur = _execute("UPDATE shops SET password_hash=? WHERE id=?", (password_hash, shop_id))
+    if cur.rowcount == 0:
+        raise KeyError(shop_id)
+
+
+def has_unassigned_rows():
+    """True if there are menu items or orders from the old one-shop version."""
+    rows = _query(
+        "SELECT (SELECT COUNT(*) FROM menu_items WHERE shop_id=0) + "
+        "(SELECT COUNT(*) FROM orders WHERE shop_id=0) AS n"
+    )
+    return rows[0]["n"] > 0
+
+
+def assign_unassigned_rows(shop_id):
+    with closing(get_connection()) as conn:
+        with conn:
+            conn.execute("UPDATE menu_items SET shop_id=? WHERE shop_id=0", (shop_id,))
+            conn.execute("UPDATE orders SET shop_id=? WHERE shop_id=0", (shop_id,))
 
 
 # ---------- MENU ITEMS ----------
 
 def load_menu_items():
     return _query(
-        "SELECT id, name, category, price, stock, is_available FROM menu_items"
+        "SELECT id, shop_id, name, category, price, stock, is_available FROM menu_items"
     )
 
 
-def add_menu_item(name, category, price, stock):
+def add_menu_item(shop_id, name, category, price, stock):
     cur = _execute(
-        "INSERT INTO menu_items (name, category, price, stock) VALUES (?, ?, ?, ?)",
-        (name, category, price, stock),
+        "INSERT INTO menu_items (shop_id, name, category, price, stock) VALUES (?, ?, ?, ?, ?)",
+        (shop_id, name, category, price, stock),
     )
     return cur.lastrowid                      # the new item's id
 
@@ -139,15 +173,16 @@ def get_max_order_no():
     return rows[0]["max_no"]
 
 
-def save_order(order_no, table_no, status, priority, total, items, customer_email=""):
+def save_order(order_no, table_no, status, priority, total, items, customer_email="", shop_id=0):
     """items = list of {"menu_item_id", "quantity", "price"}. Returns created_at."""
     created_at = datetime.now().isoformat(timespec="seconds")
     with closing(get_connection()) as conn:
         with conn:                            # both inserts succeed or neither does
             cur = conn.execute(
                 "INSERT INTO orders (order_no, table_no, status, priority, total, created_at, "
-                "customer_email) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (order_no, str(table_no), status, priority, total, created_at, customer_email),
+                "customer_email, shop_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (order_no, str(table_no), status, priority, total, created_at,
+                 customer_email, shop_id),
             )
             order_id = cur.lastrowid
             for item in items:
@@ -168,8 +203,8 @@ def update_order_status(order_no, status):
 def load_orders():
     """Every order, each with its 'items' list. Used once at startup."""
     orders = _query(
-        "SELECT id, order_no, table_no, status, priority, total, created_at, customer_email "
-        "FROM orders"
+        "SELECT id, order_no, table_no, status, priority, total, created_at, customer_email, "
+        "shop_id FROM orders"
     )
     for order in orders:
         order["items"] = _query(
@@ -179,7 +214,7 @@ def load_orders():
     return orders
 
 
-# ---------- ADMINS ----------
+# ---------- ADMINS (the canteen manager) ----------
 
 def add_admin(username, password_hash):
     _execute(

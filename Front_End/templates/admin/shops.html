@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Shops - QuickServe Manager{% endblock %}
+
+{% block nav %}
+  {% include "admin/_nav.html" %}
+{% endblock %}
+
+{% block content %}
+  <h2>Shops</h2>
+
+  <h3>Add a shop</h3>
+  <form action="/admin/shops" method="post">
+    <input type="text" name="name" placeholder="Shop name" maxlength="40" required>
+    <input type="password" name="password" placeholder="Shop password (6+ characters)" minlength="6" required>
+    <button type="submit">Add shop</button>
+  </form>
+  <p>Adding a shop also creates its login. Give the shop's staff the shop name and this password.</p>
+
+  <h3>Current shops</h3>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Shop</th>
+      <th>Change password</th>
+    </tr>
+    {% for shop in shops %}
+      <tr>
+        <td>{{ shop.id }}</td>
+        <td>{{ shop.name }}</td>
+        <td>
+          <form action="/admin/shops/{{ shop.id }}/password" method="post">
+            <input type="password" name="password" placeholder="New password" minlength="6" required>
+            <button type="submit" class="secondary">Change</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}
