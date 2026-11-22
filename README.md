@@ -1,14 +1,45 @@
-# Redplate
-A restaurant ordering and management system built with Python and Flask. RedPlate is a food ordering system developed for the Batangas State University canteen. It streamlines the ordering process for students while helping stall owners efficiently manage orders. The system applies Data Structures and Algorithms concepts to optimize data handling, search operations, and overall performance.
+# QuickServe (Redplate): Real-Time Food Ordering and Administrative Control Portal
 
+CpE 411 Data Structures and Algorithms final project, Group 9, Batangas State University.
 
+## Run it
 
-## Features (planned)
-- Customer menu and ordering
-- Kitchen order view
-- Admin menu management
+```
+pip install -r requirements.txt
+python app.py
+```
 
-## How to run
-1. Install Flask: `pip install flask`
-2. Run the app: `python app.py`
-3. Open http://127.0.0.1:5000 in your browser
+Open http://127.0.0.1:5000 (customers) and http://127.0.0.1:5000/admin/login (staff).
+Default staff account: `admin` / `admin123` (set `QUICKSERVE_ADMIN_USER` and
+`QUICKSERVE_ADMIN_PASSWORD` before the first run to use something else).
+The database file `quickserve.db` is created automatically; delete it to start fresh.
+
+## Where each data structure and algorithm is used (Back_End/service.py)
+
+| Piece | Used for |
+|---|---|
+| Hash Table | menu lookup by item id, one cart per browser session, cart quantities |
+| Stack | the Undo button in the cart (also the BST traversal) |
+| Queue | normal pending orders, first come first served |
+| Min-Heap | urgent orders ("I have class soon"), served before the queue |
+| Binary Search Tree | record store of every order; sorted traversal |
+| Binary search | finding an order by number in the sorted order list |
+| Merge sort | menu sort, cart display, sales report |
+| Linear search, bubble sort | only compared in benchmark.py |
+
+The database only saves data. The structures live in memory and are loaded at startup.
+
+## Tests and benchmark (run from this folder)
+
+```
+python -m tests.test_queue
+python -m tests.test_stack
+python -m tests.test_heap
+python -m tests.test_hash_table
+python -m tests.test_bst
+python -m tests.test_algorithms
+python -m tests.test_database
+python -m tests.test_service
+python -m tests.test_app
+python benchmark.py
+```

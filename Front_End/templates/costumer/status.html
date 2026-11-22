@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Order Status - QuickServe{% endblock %}
 
+{% block nav %}
+  <div class="inline-nav">
+    <a href="/menu">Menu</a>
+    <a href="/cart">Cart</a>
+  </div>
+{% endblock %}
+
 {% block content %}
   <div data-refresh-url="/order/{{ order.order_no }}/live">
     {% include "costumer/_order_card.html" %}

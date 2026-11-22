@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, redirect, url_for
 
 import config
 from Back_End import service
@@ -18,9 +18,13 @@ app.register_blueprint(admin_bp)
 
 
 @app.route("/")
-@app.route("/login")
-def login():
-    return render_template("costumer/login.html")
+def home():
+    return redirect(url_for("customer.menu"))
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return 'Page not found. <a href="/menu">Back to the menu</a>', 404
 
 
 if __name__ == "__main__":

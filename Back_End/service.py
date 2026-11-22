@@ -1,11 +1,12 @@
 import math
 import sqlite3
-import config
-from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 
+from werkzeug.security import check_password_hash, generate_password_hash
+
+import config
 from Back_End import database as db
-from Back_End.algorithm import merge_sort
+from Back_End.algorithm import binary_search, merge_sort
 from Back_End.Structures.bst import BST
 from Back_End.Structures.hash_table import HashTable
 from Back_End.Structures.heap import MinHeap
@@ -19,7 +20,8 @@ URGENT_MINUTES = 10
 
 # The in-memory structures. init() fills them from the database.
 _menu = None            # Hash Table: item id -> item dict
-_orders = None          # BST: order number -> order dict
+_orders = None          # BST: order number -> order dict (the record store)
+_order_list = None      # list of the same order dicts, sorted by order number (for binary search)
 _normal_queue = None    # Queue: order numbers of normal pending orders
 _urgent_heap = None     # Min-Heap: (priority, order number) of urgent pending orders
 _carts = None           # Hash Table: session id -> Cart
@@ -27,28 +29,13 @@ _next_order_no = 1
 
 
 # ---------- STARTUP ----------
-def ensure_admin():
-    """Create the default admin account if none exists. Only the hash is stored."""
-    if db.get_admin(config.ADMIN_USERNAME) is None:
-        db.add_admin(
-            config.ADMIN_USERNAME,
-            generate_password_hash(config.ADMIN_PASSWORD, method="pbkdf2:sha256"),
-        )
-
-
-def check_admin(username, password):
-    admin = db.get_admin(username)
-    return admin is not None and check_password_hash(admin["password_hash"], password)
-
 
 def init():
     """Create the database if needed, then load everything into the structures."""
-    global _menu, _orders, _normal_queue, _urgent_heap, _carts, _next_order_no
+    global _menu, _orders, _order_list, _normal_queue, _urgent_heap, _carts, _next_order_no
     db.create_tables()
     db.seed_sample_data()
-
     ensure_admin()
-
 
     _menu = HashTable()
     for item in db.load_menu_items():
@@ -69,7 +56,22 @@ def init():
         if order["status"] == "Pending":
             _enqueue_pending(order)
 
+    _order_list = [order for _, order in _orders.inorder()]   # the BST hands them over sorted
     _next_order_no = db.get_max_order_no() + 1
+
+
+def ensure_admin():
+    """Create the default admin account if none exists. Only the hash is stored."""
+    if db.get_admin(config.ADMIN_USERNAME) is None:
+        db.add_admin(
+            config.ADMIN_USERNAME,
+            generate_password_hash(config.ADMIN_PASSWORD, method="pbkdf2:sha256"),
+        )
+
+
+def check_admin(username, password):
+    admin = db.get_admin(username)
+    return admin is not None and check_password_hash(admin["password_hash"], password)
 
 
 def _tidy(number):
@@ -88,7 +90,8 @@ def _enqueue_pending(order):
 
 
 def _is_pending(order_no):
-    return _orders.contains(order_no) and _orders.search(order_no)["status"] == "Pending"
+    index = binary_search(_order_list, order_no)
+    return index != -1 and _order_list[index]["status"] == "Pending"
 
 
 def _next_to_serve():
@@ -158,11 +161,14 @@ def add_menu_item(name, category, price, stock):
     return item_id
 
 
-def update_menu_item(item_id, name, category, price, stock):
+def update_menu_item(item_id, name, category, price, stock, available=None):
+    """available=None keeps the current setting; True or False shows or hides the item."""
     item = _get_item(item_id)
     name, category, price, stock = _clean_menu_input(name, category, price, stock)
-    db.update_menu_item(item_id, name, category, price, stock, item["is_available"])
-    item.update(name=name, category=category, price=price, stock=stock)
+    is_available = item["is_available"] if available is None else (1 if available else 0)
+    db.update_menu_item(item_id, name, category, price, stock, is_available)
+    item.update(name=name, category=category, price=price, stock=stock,
+                is_available=is_available)
 
 
 def remove_menu_item(item_id):
@@ -258,13 +264,16 @@ def cart_view(session_id):
     lines = []
     total = 0
     for item_id, qty in cart.lines.items():
-        item = _get_item(item_id)
+        if not _menu.contains(item_id):                # the admin deleted it meanwhile
+            cart._apply(item_id, 0)
+            continue
+        item = _menu.get(item_id)
         lines.append({"id": item_id, "name": item["name"], "price": item["price"], "qty": qty})
         total += item["price"] * qty
     return merge_sort(lines, "id"), total
 
 
-# ---------- ORDERS (Queue + Min-Heap + BST) ----------
+# ---------- ORDERS (Queue + Min-Heap + BST + binary search) ----------
 
 def _check_table_no(table_no):
     table_no = str(table_no).strip()
@@ -299,6 +308,7 @@ def place_order(session_id, table_no, urgent=False):
              "priority": priority, "total": total, "created_at": created_at,
              "items": lines}
     _orders.insert(order_no, order)                    # BST: store the record
+    _order_list.append(order)                          # still sorted: new numbers are the biggest
     _enqueue_pending(order)                            # Queue or Min-Heap: schedule it
 
     for line in lines:                                 # take the stock
@@ -322,10 +332,10 @@ def update_status(order_no, new_status):
 
 
 def _find_record(order_no):
-    try:
-        return _orders.search(order_no)                # BST search
-    except KeyError:
+    index = binary_search(_order_list, order_no)       # our own binary search
+    if index == -1:
         raise ValueError(f"Order #{order_no} not found")
+    return _order_list[index]
 
 
 def _order_view(order):
@@ -336,7 +346,7 @@ def _order_view(order):
     return {
         "order_no": order["order_no"],
         "table_no": order["table_no"],
-        "items": ", ".join(parts),
+        "items_text": ", ".join(parts),
         "status": order["status"],
         "total": order["total"],
         "minutes_waiting": waiting,
@@ -345,7 +355,8 @@ def _order_view(order):
 
 
 def find_order(order_no):
-    return _order_view(_orders.search(order_no)) if _orders.contains(order_no) else None
+    index = binary_search(_order_list, order_no)
+    return _order_view(_order_list[index]) if index != -1 else None
 
 
 def all_orders():
@@ -370,4 +381,3 @@ def sales_report(sort_by="order_no"):
     completed = merge_sort(completed, sort_by)
     total_sales = sum(order["total"] for order in completed)
     return completed, total_sales, sort_by
-

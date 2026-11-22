@@ -18,10 +18,11 @@ def test_service():
         db.use_database(os.path.join(folder, "test.db"))
         service.init()
 
+        # admin login
         assert service.check_admin("admin", "admin123")
         assert not service.check_admin("admin", "wrong")
         assert not service.check_admin("nobody", "admin123")
-        
+
         # menu: search and sort
         assert "Chicken Adobo" in [m["name"] for m in service.get_menu()]
         assert [m["name"] for m in service.get_menu(search="adobo")] == ["Chicken Adobo"]
@@ -56,6 +57,7 @@ def test_service():
         assert service.place_order("s1", "5") == 1
         assert service.cart_view("s1") == ([], 0)                  # cart cleared
         assert service.find_order(1)["total"] == 175
+        assert service.find_order(1)["items_text"] == "5x Pancit Canton"
         assert [m for m in service.get_menu() if m["id"] == 2][0]["stock"] == 0
         service.cart_add("s2", 1)
         assert service.place_order("s2", "7", urgent=True) == 2
@@ -86,9 +88,17 @@ def test_service():
         # restart: everything must come back from the database
         service.init()
         assert service.find_order(2)["status"] == "Preparing"
+        assert service.find_order(3)["order_no"] == 3              # sorted list rebuilt from the BST
         assert service.dashboard()[0]["order_no"] == 3
         service.cart_add("s4", 1)
         assert service.place_order("s4", "1") == 4                 # numbering continues
+        assert service.find_order(4)["order_no"] == 4              # new order added to the list
+
+        # a deleted item must not break a cart that holds it
+        temp_id = service.add_menu_item("Temp Item", "Snacks", "10", "5")
+        service.cart_add("s5", temp_id)
+        assert service.remove_menu_item(temp_id) == "deleted"
+        assert service.cart_view("s5") == ([], 0)
 
         # menu management
         new_id = service.add_menu_item("Halo-Halo", "Snacks", "45", "8")
@@ -101,6 +111,10 @@ def test_service():
         assert service.remove_menu_item(1) == "hidden"             # old orders use it
         assert 1 not in [m["id"] for m in service.get_menu()]
         assert 1 in [m["id"] for m in service.get_menu(include_hidden=True)]
+        item1 = [m for m in service.get_menu(include_hidden=True) if m["id"] == 1][0]
+        service.update_menu_item(1, item1["name"], item1["category"], item1["price"],
+                                 item1["stock"], available=True)  # bring it back
+        assert 1 in [m["id"] for m in service.get_menu()]
         expect_error(ValueError, service.remove_menu_item, 999)
 
 

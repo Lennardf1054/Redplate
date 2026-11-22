@@ -29,6 +29,7 @@
       <th>Category</th>
       <th>Price</th>
       <th>Stock</th>
+      <th>Shown</th>
       <th>Action</th>
     </tr>
     {% for item in items %}
@@ -43,7 +44,9 @@
         <td>
           <input form="edit-{{ item.id }}" type="number" name="stock" value="{{ item.stock }}" min="0" required>
           {% if item.stock == 0 %}<strong>(Out of stock)</strong>{% endif %}
-          {% if not item.is_available %}<em>(Hidden)</em>{% endif %}
+        </td>
+        <td>
+          <input form="edit-{{ item.id }}" type="checkbox" name="available" {% if item.is_available %}checked{% endif %}>
         </td>
         <td>
           <button form="edit-{{ item.id }}" type="submit">Save</button>

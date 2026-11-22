@@ -42,11 +42,13 @@ def dashboard():
     next_order, orders = service.dashboard()
     return render_template("admin/dashboard.html", orders=orders, next_order=next_order)
 
+
 @admin_bp.route("/admin/dashboard/live")
 @admin_required
 def dashboard_live():
     next_order, orders = service.dashboard()
     return render_template("admin/_dashboard_live.html", orders=orders, next_order=next_order)
+
 
 @admin_bp.route("/admin/orders/<int:order_no>/status", methods=["POST"])
 @admin_required
@@ -105,6 +107,7 @@ def update_item(item_id):
             request.form.get("category", ""),
             request.form.get("price", ""),
             request.form.get("stock", ""),
+            available="available" in request.form,
         )
         flash("Item updated")
     except ValueError as error:
@@ -120,7 +123,8 @@ def delete_item(item_id):
         if result == "deleted":
             flash("Item deleted")
         else:
-            flash("This item is in past orders, so it was hidden from customers instead")
+            flash("This item is in past orders, so it was hidden from customers instead. "
+                  "Tick Shown and press Save to bring it back.")
     except ValueError as error:
         flash(str(error))
     return redirect(url_for("admin.menu"))
