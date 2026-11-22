@@ -9,10 +9,36 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open http://127.0.0.1:5000 (customers) and http://127.0.0.1:5000/admin/login (staff).
+Open http://127.0.0.1:5000 (students) and http://127.0.0.1:5000/admin/login (staff).
 Default staff account: `admin` / `admin123` (set `QUICKSERVE_ADMIN_USER` and
 `QUICKSERVE_ADMIN_PASSWORD` before the first run to use something else).
 The database file `quickserve.db` is created automatically; delete it to start fresh.
+
+## Student sign-in (school Google account)
+
+Students sign in with a `@g.batstate-u.edu.ph` Google account. Only the email is kept, so a
+student can see their own orders. Nothing is stored about names or phone numbers.
+
+Without any setup the site starts in **demo mode**: the login page asks for a school email and
+accepts it without Google. To use real Google sign-in, create an OAuth client in Google Cloud
+Console (type: Web application) with these redirect URIs:
+
+```
+http://127.0.0.1:5000/auth/google/callback
+http://localhost:5000/auth/google/callback
+```
+
+then set these in the same PowerShell window before `python app.py` (never put them in a file
+that is shared or committed):
+
+```
+$env:QUICKSERVE_GOOGLE_CLIENT_ID = "your-client-id"
+$env:QUICKSERVE_GOOGLE_CLIENT_SECRET = "your-client-secret"
+$env:QUICKSERVE_ALLOWED_DOMAIN = "g.batstate-u.edu.ph"
+```
+
+When the client ID and secret are set, demo mode switches off by itself
+(`QUICKSERVE_DEMO_LOGIN=1` turns it back on).
 
 ## Where each data structure and algorithm is used (Back_End/service.py)
 

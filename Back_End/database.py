@@ -54,7 +54,8 @@ def create_tables():
                     status TEXT NOT NULL DEFAULT 'Pending',
                     priority INTEGER NOT NULL DEFAULT 0,
                     total REAL NOT NULL,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    customer_email TEXT NOT NULL DEFAULT ''
                 );
                 CREATE TABLE IF NOT EXISTS order_items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +70,14 @@ def create_tables():
                     password_hash TEXT NOT NULL
                 );
             """)
+            _add_missing_columns(conn)
+
+
+def _add_missing_columns(conn):
+    """Upgrade a database made by an older version of the app."""
+    columns = [row["name"] for row in conn.execute("PRAGMA table_info(orders)")]
+    if "customer_email" not in columns:
+        conn.execute("ALTER TABLE orders ADD COLUMN customer_email TEXT NOT NULL DEFAULT ''")
 
 
 def seed_sample_data():
@@ -130,15 +139,15 @@ def get_max_order_no():
     return rows[0]["max_no"]
 
 
-def save_order(order_no, table_no, status, priority, total, items):
+def save_order(order_no, table_no, status, priority, total, items, customer_email=""):
     """items = list of {"menu_item_id", "quantity", "price"}. Returns created_at."""
     created_at = datetime.now().isoformat(timespec="seconds")
     with closing(get_connection()) as conn:
         with conn:                            # both inserts succeed or neither does
             cur = conn.execute(
-                "INSERT INTO orders (order_no, table_no, status, priority, total, created_at) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (order_no, str(table_no), status, priority, total, created_at),
+                "INSERT INTO orders (order_no, table_no, status, priority, total, created_at, "
+                "customer_email) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (order_no, str(table_no), status, priority, total, created_at, customer_email),
             )
             order_id = cur.lastrowid
             for item in items:
@@ -159,7 +168,8 @@ def update_order_status(order_no, status):
 def load_orders():
     """Every order, each with its 'items' list. Used once at startup."""
     orders = _query(
-        "SELECT id, order_no, table_no, status, priority, total, created_at FROM orders"
+        "SELECT id, order_no, table_no, status, priority, total, created_at, customer_email "
+        "FROM orders"
     )
     for order in orders:
         order["items"] = _query(

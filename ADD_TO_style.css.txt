@@ -1,0 +1,20 @@
+/* Add these lines to the END of Front_End/static/style.css */
+
+/* flash messages (errors and confirmations) */
+.flash {
+  background: #fff3cd;
+  border: 1px solid #ffe08a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* the +/- buttons in the cart are forms now */
+.qty-control form { display: inline; margin: 0; }
+
+/* phone layout: let the top bar and nav wrap instead of overflowing */
+.topbar { flex-wrap: wrap; gap: 8px 16px; }
+.inline-nav { flex-wrap: wrap; }
+
+/* menu management: keep the edit boxes readable on small screens */
+td input, td select { min-width: 80px; }

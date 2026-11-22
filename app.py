@@ -1,8 +1,9 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, session, url_for
 
 import config
 from Back_End import service
 from Back_End.routes.admin import admin_bp
+from Back_End.routes.auth import auth_bp
 from Back_End.routes.costumer import customer_bp
 
 app = Flask(
@@ -11,15 +12,19 @@ app = Flask(
     static_folder="Front_End/static",
 )
 app.secret_key = config.SECRET_KEY
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 
 service.init()                      # load the database into the data structures
+app.register_blueprint(auth_bp)
 app.register_blueprint(customer_bp)
 app.register_blueprint(admin_bp)
 
 
 @app.route("/")
 def home():
-    return redirect(url_for("customer.menu"))
+    if session.get("student"):
+        return redirect(url_for("customer.menu"))
+    return redirect(url_for("auth.login"))
 
 
 @app.errorhandler(404)

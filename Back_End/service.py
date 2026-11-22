@@ -1,4 +1,5 @@
 import math
+import re
 import sqlite3
 from datetime import datetime
 
@@ -72,6 +73,19 @@ def ensure_admin():
 def check_admin(username, password):
     admin = db.get_admin(username)
     return admin is not None and check_password_hash(admin["password_hash"], password)
+
+
+_EMAIL_NAME = re.compile(r"^[a-z0-9._%+-]{1,64}$")
+
+
+def check_student_email(email):
+    """Accept only school Google accounts. Returns the cleaned-up email."""
+    email = str(email).strip().lower()
+    domain = config.ALLOWED_EMAIL_DOMAIN.lower()
+    name, _, host = email.rpartition("@")
+    if not name or host != domain or not _EMAIL_NAME.match(name):
+        raise ValueError(f"Please use your school Google account (@{domain})")
+    return email
 
 
 def _tidy(number):
@@ -282,7 +296,7 @@ def _check_table_no(table_no):
     return str(int(table_no))
 
 
-def place_order(session_id, table_no, urgent=False):
+def place_order(session_id, table_no, urgent=False, customer_email=""):
     """Turn the cart into an order. Returns the new order number."""
     global _next_order_no
     table_no = _check_table_no(table_no)
@@ -302,11 +316,12 @@ def place_order(session_id, table_no, urgent=False):
 
     order_no = _next_order_no
     priority = 0 if urgent else 1
-    created_at = db.save_order(order_no, table_no, "Pending", priority, total, lines)
+    created_at = db.save_order(order_no, table_no, "Pending", priority, total, lines,
+                               customer_email)
 
     order = {"order_no": order_no, "table_no": table_no, "status": "Pending",
              "priority": priority, "total": total, "created_at": created_at,
-             "items": lines}
+             "items": lines, "customer_email": customer_email}
     _orders.insert(order_no, order)                    # BST: store the record
     _order_list.append(order)                          # still sorted: new numbers are the biggest
     _enqueue_pending(order)                            # Queue or Min-Heap: schedule it
@@ -351,12 +366,19 @@ def _order_view(order):
         "total": order["total"],
         "minutes_waiting": waiting,
         "urgent": order["priority"] == 0 or waiting >= URGENT_MINUTES,
+        "customer_email": order.get("customer_email", ""),
     }
 
 
 def find_order(order_no):
     index = binary_search(_order_list, order_no)
     return _order_view(_order_list[index]) if index != -1 else None
+
+
+def my_orders(customer_email):
+    """One student's orders, newest first."""
+    mine = [order for order in _order_list if order["customer_email"] == customer_email]
+    return [_order_view(order) for order in reversed(mine)]
 
 
 def all_orders():

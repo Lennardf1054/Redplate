@@ -43,11 +43,14 @@ def test_database():
         assert db.get_max_order_no() == 1
         orders = db.load_orders()
         assert len(orders) == 1 and len(orders[0]["items"]) == 2
+        assert orders[0]["customer_email"] == ""        # no owner given
+        db.save_order(2, 6, "Pending", 1, 60, items[:1], "juan@g.batstate-u.edu.ph")
+        assert db.load_orders()[1]["customer_email"] == "juan@g.batstate-u.edu.ph"
         db.update_order_status(1, "Ready")
         assert db.load_orders()[0]["status"] == "Ready"
         expect_error(KeyError, db.update_order_status, 99, "Ready")
         expect_error(sqlite3.IntegrityError, db.save_order, 1, 2, "Pending", 0, 20, items)
-        assert len(db.load_orders()) == 1               # failed save left nothing behind
+        assert len(db.load_orders()) == 2               # failed save left nothing behind
 
         # admins
         db.add_admin("admin", "fakehash")
@@ -56,6 +59,30 @@ def test_database():
         expect_error(sqlite3.IntegrityError, db.add_admin, "admin", "other")
 
 
+def test_upgrade_old_database():
+    """A database made before the customer_email column existed must be upgraded."""
+    with tempfile.TemporaryDirectory() as folder:
+        path = os.path.join(folder, "old.db")
+        conn = sqlite3.connect(path)
+        conn.executescript("""
+            CREATE TABLE menu_items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL,
+                category TEXT NOT NULL, price REAL NOT NULL, stock INTEGER NOT NULL,
+                is_available INTEGER NOT NULL DEFAULT 1);
+            CREATE TABLE orders (id INTEGER PRIMARY KEY AUTOINCREMENT, order_no INTEGER NOT NULL UNIQUE,
+                table_no TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'Pending',
+                priority INTEGER NOT NULL DEFAULT 0, total REAL NOT NULL, created_at TEXT NOT NULL);
+            INSERT INTO orders (order_no, table_no, status, priority, total, created_at)
+                VALUES (7, '3', 'Completed', 1, 60, '2026-01-01T10:00:00');
+        """)
+        conn.commit()
+        conn.close()
+        db.use_database(path)
+        db.create_tables()                              # adds the missing column
+        orders = db.load_orders()
+        assert orders[0]["order_no"] == 7 and orders[0]["customer_email"] == ""
+
+
 if __name__ == "__main__":
     test_database()
+    test_upgrade_old_database()
     print("All database tests passed")

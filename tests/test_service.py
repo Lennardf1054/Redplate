@@ -1,6 +1,7 @@
 import os
 import tempfile
 
+import config
 from Back_End import database as db
 from Back_End import service
 
@@ -22,6 +23,13 @@ def test_service():
         assert service.check_admin("admin", "admin123")
         assert not service.check_admin("admin", "wrong")
         assert not service.check_admin("nobody", "admin123")
+
+        # student sign-in: only school Google accounts
+        domain = config.ALLOWED_EMAIL_DOMAIN
+        assert service.check_student_email("  Juan.Cruz@" + domain.upper() + " ") == "juan.cruz@" + domain
+        for bad in ("juan@gmail.com", "@" + domain, "", "a@b@" + domain,
+                    "juan@" + domain + ".evil.com", "juan smith@" + domain, "juan@x" + domain):
+            expect_error(ValueError, service.check_student_email, bad)
 
         # menu: search and sort
         assert "Chicken Adobo" in [m["name"] for m in service.get_menu()]
@@ -116,6 +124,16 @@ def test_service():
                                  item1["stock"], available=True)  # bring it back
         assert 1 in [m["id"] for m in service.get_menu()]
         expect_error(ValueError, service.remove_menu_item, 999)
+
+        # orders belong to the student who placed them
+        student = "juan@" + domain
+        service.cart_add(student, 4)
+        assert service.place_order(student, "9", customer_email=student) == 5
+        assert [o["order_no"] for o in service.my_orders(student)] == [5]
+        assert service.my_orders("maria@" + domain) == []
+        assert service.find_order(5)["customer_email"] == student
+        service.init()                                             # the owner survives a restart
+        assert [o["order_no"] for o in service.my_orders(student)] == [5]
 
 
 if __name__ == "__main__":

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My Orders - QuickServe{% endblock %}
+
+{% block nav %}
+  {% include "costumer/_nav.html" %}
+{% endblock %}
+
+{% block content %}
+  <h2>My Orders</h2>
+
+  {% if orders %}
+    <table>
+      <tr>
+        <th>Order #</th>
+        <th>Items</th>
+        <th>Status</th>
+        <th>Total</th>
+      </tr>
+      {% for order in orders %}
+        <tr>
+          <td><a href="/order/{{ order.order_no }}">#{{ order.order_no }}</a></td>
+          <td>{{ order.items_text }}</td>
+          <td>{{ order.status }}</td>
+          <td>₱{{ order.total }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>You have no orders yet.</p>
+    <a href="/menu" class="btn">Browse the menu</a>
+  {% endif %}
+{% endblock %}
