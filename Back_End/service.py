@@ -22,10 +22,10 @@ MIN_PASSWORD_LENGTH = 6
 
 # Shops created the very first time the app runs on an empty database.
 SAMPLE_SHOPS = [
-    ("Mang Tomas Kitchen", [("Chicken Adobo", "Meals", 60, 10),
+    ("Julies", [("Chicken Adobo", "Meals", 60, 10),
                             ("Pancit Canton", "Meals", 35, 5),
                             ("Plain Rice", "Meals", 10, 30)]),
-    ("Sip and Snack", [("Iced Tea", "Drinks", 20, 0),
+    ("Potato Corner", [("Iced Tea", "Drinks", 20, 0),
                        ("Fried Banana", "Snacks", 15, 20),
                        ("Halo-Halo", "Snacks", 45, 8)]),
 ]
@@ -203,8 +203,7 @@ def check_shop_login(shop_id, password):
     if not _shops.contains(shop_id):
         return False
     return check_password_hash(_shops.get(shop_id)["password_hash"], password)
-
-
+   
 # ---------- SCHEDULING (one Queue and one Min-Heap per shop) ----------
 
 def _enqueue_pending(order):
