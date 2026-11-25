@@ -175,14 +175,20 @@ def _check_new_password(password):
     return generate_password_hash(password, method="pbkdf2:sha256")
 
 
-def add_shop(name, password):
-    """Create a shop and its login account in one step. Returns the new shop id."""
+def _clean_shop_name(name, own_id=None):
+    """Tidy the name and make sure no other shop already uses it (any capitalization)."""
     name = " ".join(str(name).split())                 # trim and collapse extra spaces
     if not 2 <= len(name) <= 40:
         raise ValueError("Shop name must be 2 to 40 characters")
-    for _, shop in _shops.items():
-        if shop["name"].lower() == name.lower():
+    for shop_id, shop in _shops.items():
+        if shop_id != own_id and shop["name"].lower() == name.lower():
             raise ValueError("A shop with that name already exists")
+    return name
+
+
+def add_shop(name, password):
+    """Create a shop and its login account in one step. Returns the new shop id."""
+    name = _clean_shop_name(name)
     password_hash = _check_new_password(password)
     try:
         shop_id = db.add_shop(name, password_hash)     # save first
@@ -192,12 +198,44 @@ def add_shop(name, password):
     return shop_id
 
 
+def rename_shop(shop_id, new_name):
+    shop = _get_shop(shop_id)
+    new_name = _clean_shop_name(new_name, own_id=shop_id)   # its own old name does not count
+    try:
+        db.rename_shop(shop_id, new_name)              # save first
+    except sqlite3.IntegrityError:
+        raise ValueError("A shop with that name already exists")
+    shop["name"] = new_name
+
+
 def reset_shop_password(shop_id, new_password):
     shop = _get_shop(shop_id)
     password_hash = _check_new_password(new_password)
     db.update_shop_password(shop_id, password_hash)    # save first
     shop["password_hash"] = password_hash
 
+def delete_shop(shop_id):
+    """Delete a shop with its login, its menu and its order history."""
+    global _orders, _order_list
+    _get_shop(shop_id)
+    if len(list_shops()) == 1:
+        raise ValueError("You cannot delete the last shop")
+    open_orders = [o for o in _order_list if o["shop_id"] == shop_id and o["status"] != "Completed"]
+    if open_orders:
+        raise ValueError(f"Finish or complete its {len(open_orders)} open order(s) first")
+    db.delete_shop(shop_id)                            # save first, then clean up memory
+    for item_id, item in _menu.items():
+        if item["shop_id"] == shop_id:
+            _menu.remove(item_id)
+    for key, _ in _carts.items():
+        if key.endswith(f"|{shop_id}"):
+            _carts.remove(key)
+    _order_list = [o for o in _order_list if o["shop_id"] != shop_id]
+    _orders = BST()                                    # the BST has no delete, so rebuild it
+    for order in _order_list:
+        _orders.insert(order["order_no"], order)
+    _shops.remove(shop_id)
+    _lanes.remove(shop_id)
 
 def check_shop_login(shop_id, password):
     if not _shops.contains(shop_id):

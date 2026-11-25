@@ -22,15 +22,27 @@
       <th>ID</th>
       <th>Shop</th>
       <th>Change password</th>
+      <th>Delete</th>
     </tr>
     {% for shop in shops %}
       <tr>
         <td>{{ shop.id }}</td>
-        <td>{{ shop.name }}</td>
+        <td>
+          <form action="/admin/shops/{{ shop.id }}/rename" method="post">
+            <input type="text" name="name" value="{{ shop.name }}" maxlength="40" required>
+            <button type="submit" class="secondary">Rename</button>
+          </form>
+        </td>
         <td>
           <form action="/admin/shops/{{ shop.id }}/password" method="post">
             <input type="password" name="password" placeholder="New password" minlength="6" required>
             <button type="submit" class="secondary">Change</button>
+          </form>
+        </td>
+        <td>
+          <form action="/admin/shops/{{ shop.id }}/delete" method="post"
+                data-confirm="Delete {{ shop.name }} with its menu and order history? This cannot be undone.">
+            <button type="submit" class="secondary">Delete</button>
           </form>
         </td>
       </tr>

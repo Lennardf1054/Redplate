@@ -18,6 +18,14 @@ def shop_required(view):
                 return redirect(url_for("admin.shops"))
             flash("Please log in first")
             return redirect(url_for("admin.login"))
+        try:
+            shop = service.get_shop(session["shop_id"])
+        except ValueError:                             # the manager deleted this shop
+            for key in ("shop_id", "shop_name"):
+                session.pop(key, None)
+            flash("That shop no longer exists")
+            return redirect(url_for("admin.login"))
+        session["shop_name"] = shop["name"]            # picks up a rename right away
         return view(session["shop_id"], *args, **kwargs)
     return wrapper
 
@@ -81,6 +89,16 @@ def shops():
         return redirect(url_for("admin.shops"))
     return render_template("admin/shops.html", shops=service.list_shops())
 
+@admin_bp.route("/admin/shops/<int:shop_id>/rename", methods=["POST"])
+@manager_required
+def rename_shop(shop_id):
+    try:
+        service.rename_shop(shop_id, request.form.get("name", ""))
+        flash("Shop renamed")
+    except ValueError as error:
+        flash(str(error))
+    return redirect(url_for("admin.shops"))
+
 
 @admin_bp.route("/admin/shops/<int:shop_id>/password", methods=["POST"])
 @manager_required
@@ -92,6 +110,15 @@ def reset_shop_password(shop_id):
         flash(str(error))
     return redirect(url_for("admin.shops"))
 
+@admin_bp.route("/admin/shops/<int:shop_id>/delete", methods=["POST"])
+@manager_required
+def delete_shop(shop_id):
+    try:
+        service.delete_shop(shop_id)
+        flash("Shop deleted")
+    except ValueError as error:
+        flash(str(error))
+    return redirect(url_for("admin.shops"))
 
 # ---------- one shop's staff: everything below only touches their own shop ----------
 

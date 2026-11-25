@@ -111,6 +111,22 @@ def update_shop_password(shop_id, password_hash):
     if cur.rowcount == 0:
         raise KeyError(shop_id)
 
+def delete_shop(shop_id):
+    """Remove a shop with its menu items, its orders and their lines, all or nothing."""
+    with closing(get_connection()) as conn:
+        with conn:
+            conn.execute("DELETE FROM order_items WHERE order_id IN "
+                         "(SELECT id FROM orders WHERE shop_id=?)", (shop_id,))
+            conn.execute("DELETE FROM orders WHERE shop_id=?", (shop_id,))
+            conn.execute("DELETE FROM menu_items WHERE shop_id=?", (shop_id,))
+            cur = conn.execute("DELETE FROM shops WHERE id=?", (shop_id,))
+            if cur.rowcount == 0:
+                raise KeyError(shop_id)           # undoes the deletes above
+
+def rename_shop(shop_id, name):
+    cur = _execute("UPDATE shops SET name=? WHERE id=?", (name, shop_id))
+    if cur.rowcount == 0:
+        raise KeyError(shop_id)
 
 def has_unassigned_rows():
     """True if there are menu items or orders from the old one-shop version."""
