@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Canteen Manager Login - Redplate{% endblock %}
+{% block content %}
+<div class="staff-login-wrap">
+  <div class="staff-login-card">
+    <a href="/admin/staff/shops" class="staff-brand login-brand">Redplate<span>.</span></a>
+    <div class="staff-login-icon">👤</div>
+    <h1>Canteen Manager</h1>
+    <p>Sign in to manage shops and shop accounts.</p>
+    <form action="{{ url_for('admin.manager_login') }}" method="post">
+      <label for="password">Manager password</label>
+      <input id="password" name="password" type="password" placeholder="Enter manager password" autocomplete="current-password" required>
+      <button type="submit" class="staff-login-button">Log in</button>
+    </form>
+    <a href="/admin/staff/shops" class="staff-back-link">← Back to Staff Admin</a>
+  </div>
+</div>
+{% endblock %}
