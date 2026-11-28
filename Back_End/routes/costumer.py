@@ -34,15 +34,15 @@ def _is_ajax():
     return request.headers.get("X-Requested-With") == "fetch"
 
 
-def _cart_box(shop, show_flashes):
-    lines, total = service.cart_view(_email(), shop["id"])
-    return render_template("costumer/_cart_box.html", shop=shop, cart_items=lines,
-                           cart_total=total, show_flashes=show_flashes)
+def _global_cart_box(show_flashes=False):
+    return render_template("costumer/_global_cart.html",
+                          cart_groups=service.customer_cart_view(_email()),
+                          show_flashes=show_flashes)
 
 
 def _after_cart_change(shop):
     if _is_ajax():
-        return _cart_box(shop, show_flashes=True)      # the messages travel inside the box
+        return _global_cart_box(show_flashes=True)
     return redirect(url_for("customer.shop", shop_id=shop["id"]))
 
 
@@ -77,6 +77,12 @@ def shops():
     return render_template("costumer/shops.html", shops=service.shop_cards())
 
 
+@customer_bp.route("/customer-cart")
+@student_required
+def customer_cart():
+    return _global_cart_box()
+
+
 @customer_bp.route("/shop/<int:shop_id>")
 @student_required
 def shop(shop_id):
@@ -88,9 +94,7 @@ def shop(shop_id):
     if sort_by not in ("name", "price"):
         sort_by = "name"
     items = service.get_menu(shop_id, search=q, sort_by=sort_by)
-    lines, total = service.cart_view(_email(), shop_id)
     return render_template("costumer/shop.html", shop=the_shop, items=items, q=q, sort_by=sort_by,
-                           cart_items=lines, cart_total=total, show_flashes=False,
                            my_orders=service.my_orders(_email(), limit=8))
 
 
