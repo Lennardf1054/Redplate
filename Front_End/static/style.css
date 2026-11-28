@@ -346,3 +346,26 @@ td input, td select { min-width: 80px; }
  .staff-side-footer { margin-top:10px; border-top:0; padding-top:0; }
  .staff-main { padding:22px 16px; }
 }
+
+/* Shop dashboard navigation: move each shop's toolbar into a left sidebar */
+.shop-admin-layout { min-height:100vh; display:grid; grid-template-columns:250px minmax(0,1fr); }
+.shop-admin-sidebar { min-height:100vh; height:100vh; position:sticky; top:0; align-self:start; display:flex; flex-direction:column; padding:26px 16px; background:var(--card); border-right:1px solid var(--border); }
+.shop-admin-brand { display:block; color:var(--primary); font-weight:800; font-size:1.7rem; letter-spacing:-.04em; text-decoration:none; margin:0 10px 34px; }
+.shop-admin-brand span { color:var(--accent); }
+.shop-admin-caption { margin:0 10px 12px; color:var(--muted); font-size:.72rem; font-weight:800; letter-spacing:.12em; }
+.shop-admin-sidebar .inline-nav { display:flex; flex-direction:column; gap:5px; margin-bottom:0; }
+.shop-admin-sidebar .inline-nav a { display:flex; padding:12px 13px; border-radius:10px; border:0; background:transparent; font-weight:600; }
+.shop-admin-sidebar .inline-nav a:hover { background:#FCE7DA; color:var(--primary-dark); }
+.shop-admin-footer { margin-top:auto; padding-top:14px; border-top:1px solid var(--border); }
+.shop-admin-name { color:var(--muted); font-size:.88rem; overflow-wrap:anywhere; margin-bottom:8px; }
+.shop-admin-main { min-width:0; padding:34px clamp(18px,4vw,52px); }
+@media (max-width:800px) {
+ .shop-admin-layout { grid-template-columns:1fr; }
+ .shop-admin-sidebar { min-height:auto; height:auto; position:static; padding:16px; border-right:0; border-bottom:1px solid var(--border); }
+ .shop-admin-brand { margin:0 6px 12px; }
+ .shop-admin-caption { margin:0 6px 8px; }
+ .shop-admin-sidebar .inline-nav { flex-direction:row; flex-wrap:wrap; }
+ .shop-admin-sidebar .inline-nav a { flex:1 1 140px; padding:9px 10px; }
+ .shop-admin-footer { margin-top:10px; padding-top:0; border-top:0; }
+ .shop-admin-main { padding:22px 16px; }
+}
