@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Staff Admin - Shops{% endblock %}
+{% block content %}
+<div class="staff-dashboard-header">
+  <div><p class="staff-eyebrow">STAFF PORTAL</p><h1>Select a shop</h1><p class="staff-subtitle">Choose a shop to open its staff dashboard.</p></div>
+</div>
+{% if shops %}
+<div class="staff-shop-grid">
+  {% for shop in shops %}
+  <a class="staff-shop-card" href="{{ url_for('admin.shop_login', shop_id=shop.id) }}">
+    <div class="staff-shop-icon">🏪</div>
+    <h2>{{ shop.name }}</h2>
+    <p>Open shop dashboard</p>
+    <span class="staff-shop-arrow">→</span>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="staff-empty"><h2>No shops yet</h2><p>Use the Canteen Manager to create shops.</p><a class="staff-empty-link" href="/admin/manager/login">Open Canteen Manager →</a></div>
+{% endif %}
+{% endblock %}
