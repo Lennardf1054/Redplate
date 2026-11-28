@@ -19,15 +19,6 @@
         </div>
       </aside>
       <main class="customer-main">
-        {% with messages = get_flashed_messages() %}
-          {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-      </main>
-      <aside class="customer-cart-sidebar" data-cart-box data-refresh-url="/customer-cart">
-        {% include "costumer/_global_cart.html" %}
-      </aside>
-    </div>
   {% elif session.get("staff_admin") %}
     <div class="staff-layout">
       <aside class="staff-sidebar">
@@ -38,23 +29,25 @@
         <div class="staff-side-footer"><a href="/admin/staff/logout" class="staff-side-link">↪ <span>Log out</span></a></div>
       </aside>
       <main class="staff-main">
-        {% with messages = get_flashed_messages() %}
-          {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
-        {% endwith %}
-        {{ self.content() }}
-      </main>
-    </div>
   {% else %}
     <header class="topbar">
       <a href="/" class="brand">Redplate</a>
       {{ self.nav() }}
     </header>
     <main class="container">
-      {% with messages = get_flashed_messages() %}
-        {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
-      {% endwith %}
-      {{ self.content() }}
+  {% endif %}
+    {% with messages = get_flashed_messages() %}
+      {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
     </main>
+  {% if session.get("student") and not session.get("shop_id") and not session.get("manager") and not session.get("staff_admin") %}
+      <aside class="customer-cart-sidebar" data-cart-box data-refresh-url="/customer-cart">
+        {% include "costumer/_global_cart.html" %}
+      </aside>
+    </div>
+  {% elif session.get("staff_admin") %}
+    </div>
   {% endif %}
   <script src="{{ url_for('static', filename='logic.js') }}" defer></script>
 </body>
