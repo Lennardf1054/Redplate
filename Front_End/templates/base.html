@@ -19,6 +19,17 @@
         </div>
       </aside>
       <main class="customer-main">
+  {% elif session.get("shop_id") is not none and not session.get("manager") %}
+    <div class="shop-admin-layout">
+      <aside class="shop-admin-sidebar">
+        <a href="/admin/dashboard" class="shop-admin-brand">Redplate<span>.</span></a>
+        <p class="shop-admin-caption">SHOP DASHBOARD</p>
+        {{ self.nav() }}
+        <div class="shop-admin-footer">
+          {% if session.get("shop_name") %}<div class="shop-admin-name">Shop: <strong>{{ session.get("shop_name") }}</strong></div>{% endif %}
+        </div>
+      </aside>
+      <main class="shop-admin-main">
   {% elif session.get("staff_admin") %}
     <div class="staff-layout">
       <aside class="staff-sidebar">
@@ -45,6 +56,8 @@
       <aside class="customer-cart-sidebar" data-cart-box data-refresh-url="/customer-cart">
         {% include "costumer/_global_cart.html" %}
       </aside>
+    </div>
+  {% elif session.get("shop_id") is not none and not session.get("manager") %}
     </div>
   {% elif session.get("staff_admin") %}
     </div>
