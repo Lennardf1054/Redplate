@@ -8,6 +8,7 @@
 </head>
 
 <body>
+<<<<<<< HEAD
   <!-- <img src="images/website_test_image.png" height="200px" width="300px"> -->
    <!-- <img src="{{ url_for('static', filename='website_test_image.png') }}" height="200" width="300"> -->
   <header class="topbar">
@@ -24,6 +25,42 @@
     {% block content %}{% endblock %}
   </main>
 
+=======
+  {% if session.get("student") and not session.get("shop_id") and not session.get("manager") %}
+    <div class="customer-layout">
+      <aside class="customer-sidebar">
+        <a href="/shops" class="customer-brand">Redplate<span>.</span></a>
+        <p class="customer-nav-label">CUSTOMER MENU</p>
+        {% block nav %}{% endblock %}
+        <div class="customer-sidebar-footer">
+          <span class="customer-account-label">Signed in as</span>
+          <span class="customer-account-email">{{ session.get("student") }}</span>
+        </div>
+      </aside>
+      <main class="customer-main">
+        {% with messages = get_flashed_messages() %}
+          {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+          {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  {% else %}
+    <header class="topbar">
+      <a href="/" class="brand">Redplate</a>
+      {{ self.nav() }}
+    </header>
+    <main class="container">
+      {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      {{ self.content() }}
+    </main>
+  {% endif %}
+>>>>>>> 2e79f2f924941012f31b7c6378cd5b88897d78dc
   <script src="{{ url_for('static', filename='logic.js') }}" defer></script>
 </body>
 </html>

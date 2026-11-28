@@ -1,5 +1,17 @@
-<div class="inline-nav">
-  <a href="/shops">Shops</a>
-  <a href="/my-orders">My Orders</a>
-  <a href="/logout">Log out</a>
-</div>
+<nav class="customer-nav" aria-label="Customer navigation">
+  <a href="/shops" class="{% if request.path.startswith('/shops') or request.path.startswith('/shop/') or request.path == '/menu' %}active{% endif %}">
+    <span class="customer-nav-icon" aria-hidden="true">▦</span><span>Shops</span>
+  </a>
+  <a href="/my-orders" class="{% if request.path == '/my-orders' or request.path.startswith('/order/') %}active{% endif %}">
+    <span class="customer-nav-icon" aria-hidden="true">≡</span><span>My Orders</span>
+  </a>
+  <a href="/payment-details" class="{% if request.path == '/payment-details' %}active{% endif %}">
+    <span class="customer-nav-icon" aria-hidden="true">₱</span><span>Payment Details</span>
+  </a>
+  <a href="/purchase-history" class="{% if request.path == '/purchase-history' %}active{% endif %}">
+    <span class="customer-nav-icon" aria-hidden="true">↻</span><span>Purchase History</span>
+  </a>
+  <a href="/logout" class="customer-nav-logout">
+    <span class="customer-nav-icon" aria-hidden="true">↪</span><span>Log out</span>
+  </a>
+</nav>
