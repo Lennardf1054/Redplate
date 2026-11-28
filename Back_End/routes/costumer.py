@@ -162,6 +162,19 @@ def payment_details():
     return render_template("costumer/payment_details.html")
 
 
+@customer_bp.route("/purchase-history")
+@student_required
+def purchase_history():
+    completed_orders = [order for order in service.my_orders(_email()) if order["status"] == "Completed"]
+    return render_template("costumer/purchase_history.html", orders=completed_orders)
+
+
+@customer_bp.route("/payment-details")
+@student_required
+def payment_details():
+    return render_template("costumer/payment_details.html")
+
+
 @customer_bp.route("/order/<int:order_no>")
 @student_required
 def order_status(order_no):
