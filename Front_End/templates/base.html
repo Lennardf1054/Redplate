@@ -6,7 +6,10 @@
   <title>{% block title %}Redplate{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
+  <!-- <img src="images/website_test_image.png" height="200px" width="300px"> -->
+   <!-- <img src="{{ url_for('static', filename='website_test_image.png') }}" height="200" width="300"> -->
   <header class="topbar">
     <a href="/" class="brand">Redplate</a>
     {% block nav %}{% endblock %}
