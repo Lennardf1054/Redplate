@@ -26,6 +26,9 @@
         {% endwith %}
         {% block content %}{% endblock %}
       </main>
+      <aside class="customer-cart-sidebar" data-cart-box data-refresh-url="/customer-cart">
+        {% include "costumer/_global_cart.html" %}
+      </aside>
     </div>
   {% else %}
     <header class="topbar">
