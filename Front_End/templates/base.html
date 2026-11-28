@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  {% if session.get("student") %}
+  {% if session.get("student") and not session.get("shop_id") and not session.get("manager") %}
     <div class="customer-layout">
       <aside class="customer-sidebar">
         <a href="/shops" class="customer-brand">Redplate<span>.</span></a>
@@ -30,7 +30,7 @@
   {% else %}
     <header class="topbar">
       <a href="/" class="brand">Redplate</a>
-      {% block nav %}{% endblock %}
+      {{ self.nav() }}
     </header>
     <main class="container">
       {% with messages = get_flashed_messages() %}
@@ -38,7 +38,7 @@
           <div class="flash">{{ message }}</div>
         {% endfor %}
       {% endwith %}
-      {% block content %}{% endblock %}
+      {{ self.content() }}
     </main>
   {% endif %}
   <script src="{{ url_for('static', filename='logic.js') }}" defer></script>
