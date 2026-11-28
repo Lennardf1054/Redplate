@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Staff Admin Login - Redplate{% endblock %}
+{% block content %}
+<div class="staff-login-wrap">
+  <div class="staff-login-card">
+    <a href="/" class="staff-brand login-brand">Redplate<span>.</span></a>
+    <div class="staff-login-icon">🔐</div>
+    <h1>Staff Admin</h1>
+    <p>Sign in to access shop staff portals.</p>
+    <form action="{{ url_for('admin.staff_login') }}" method="post">
+      <label for="password">Staff Admin password</label>
+      <input id="password" name="password" type="password" placeholder="Enter staff admin password" autocomplete="current-password" required>
+      <button type="submit" class="staff-login-button">Continue</button>
+    </form>
+    <a href="/shops" class="staff-back-link">← Back to customer shops</a>
+  </div>
+</div>
+{% endblock %}
