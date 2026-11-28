@@ -41,7 +41,7 @@
         {% with messages = get_flashed_messages() %}
           {% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}
         {% endwith %}
-        {% block content %}{% endblock %}
+        {{ self.content() }}
       </main>
     </div>
   {% else %}
