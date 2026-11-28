@@ -1,0 +1,52 @@
+{% if show_flashes %}
+  {% for message in get_flashed_messages() %}
+    <div class="flash">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="global-cart-inner">
+  <h3>Your carts</h3>
+  {% if cart_groups %}
+    {% for group in cart_groups %}
+      <section class="global-cart-shop card">
+        <h4>{{ group.shop.name }}</h4>
+        {% for item in group.items %}
+          <div class="cart-line global-cart-line">
+            <div class="global-cart-item">
+              <strong>{{ item.name }}</strong>
+              <small>₱{{ item.price }} each</small>
+            </div>
+            <div class="qty-control">
+              <form action="/shop/{{ group.shop.id }}/cart/decrease/{{ item.id }}" method="post" data-ajax>
+                <button class="secondary" aria-label="Decrease quantity">−</button>
+              </form>
+              <span>{{ item.qty }}</span>
+              <form action="/shop/{{ group.shop.id }}/cart/add/{{ item.id }}" method="post" data-ajax>
+                <button class="secondary" aria-label="Increase quantity">+</button>
+              </form>
+            </div>
+            <span class="global-cart-subtotal">₱{{ item.price * item.qty }}</span>
+            <form action="/shop/{{ group.shop.id }}/cart/remove/{{ item.id }}" method="post" data-ajax>
+              <button class="secondary" aria-label="Remove item">×</button>
+            </form>
+          </div>
+        {% endfor %}
+        <p class="global-cart-total">Shop total: <strong>₱{{ group.total }}</strong></p>
+        <form action="/shop/{{ group.shop.id }}/cart/undo" method="post" data-ajax>
+          <button class="secondary global-cart-undo">Undo last change</button>
+        </form>
+        <form action="/shop/{{ group.shop.id }}/checkout" method="post" data-ajax class="global-cart-checkout">
+          <label>Table number
+            <input type="number" name="table_no" min="1" max="50" required>
+          </label>
+          <label class="global-cart-priority">
+            <input type="checkbox" name="urgent"> I have class soon (priority)
+          </label>
+          <button type="submit" class="global-cart-checkout-button">Checkout {{ group.shop.name }}</button>
+        </form>
+      </section>
+    {% endfor %}
+  {% else %}
+    <p class="global-cart-empty">No active carts yet.</p>
+    <a href="/shops" class="btn">Browse shops</a>
+  {% endif %}
+</div>
