@@ -431,6 +431,24 @@ def cart_undo(email, shop_id):
         raise ValueError("Nothing to undo")
 
 
+def customer_cart_view(email):
+    """Non-empty carts for one customer, grouped by shop for the persistent sidebar."""
+    prefix = f"{email}|"
+    groups = []
+    for key, cart in _carts.items():
+        if not key.startswith(prefix) or cart.is_empty():
+            continue
+        shop_id = int(key[len(prefix):])
+        if not _shops.contains(shop_id):
+            continue
+        lines, total = cart_view(email, shop_id)
+        if lines:
+            shop = _shops.get(shop_id)
+            groups.append({"shop": {"id": shop_id, "name": shop["name"]},
+                          "items": lines, "total": total})
+    return sorted(groups, key=lambda group: group["shop"]["name"].lower())
+
+
 def cart_view(email, shop_id):
     """Returns (lines, total). Each line: id, name, price, qty."""
     cart = _get_cart(email, shop_id)
