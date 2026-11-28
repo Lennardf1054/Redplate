@@ -50,6 +50,6 @@
       form.submit();                            // fall back to a normal page load
       return;
     }
-    document.querySelectorAll("[data-refresh-url]").forEach(refreshBox);   // new order shows up now
+    document.querySelectorAll("[data-refresh-url]:not([data-cart-box])").forEach(refreshBox);   // refresh order boxes after cart changes
   });
 })();
