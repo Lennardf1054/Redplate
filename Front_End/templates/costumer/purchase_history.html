@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Purchase History - Redplate{% endblock %}
+{% block nav %}
+  {% include "costumer/_nav.html" %}
+{% endblock %}
+{% block content %}
+  <h2>Purchase History</h2>
+  <p class="page-intro">Your completed orders from all shops.</p>
+  {% if orders %}
+    <table>
+      <thead><tr><th>Order #</th><th>Shop</th><th>Items</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td><a href="/order/{{ order.order_no }}">#{{ order.order_no }}</a></td>
+            <td>{{ order.shop_name }}</td>
+            <td>{{ order.items_text }}</td>
+            <td>₱{{ order.total }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="card empty-state">
+      <h3>No completed purchases yet</h3>
+      <p>Orders will appear here after the shop marks them as completed.</p>
+      <a href="/shops" class="btn">Browse shops</a>
+    </div>
+  {% endif %}
+{% endblock %}
